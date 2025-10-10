@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>FreeGIF 录制器</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #2c2c2c;
+      overflow: hidden;
+      color: white;
+    }
+
+    /* 录制模式 */
+    #recorder-mode {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: transparent;
+    }
+
+    #recorder-mode.hidden {
+      display: none;
+    }
+
+    #preview-area {
+      flex: 1;
+      background: #000;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #preview-canvas {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    #recorder-controls {
+      background: rgba(0, 0, 0, 0.9);
+      padding: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    #recording-indicator {
+      width: 12px;
+      height: 12px;
+      background: #ff4444;
+      border-radius: 50%;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .control-btn {
+      background: #555;
+      border: none;
+      color: white;
+      padding: 10px 25px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    .control-btn:hover {
+      background: #666;
+    }
+
+    .control-btn.danger {
+      background: #ff4444;
+    }
+
+    .control-btn.danger:hover {
+      background: #ff6666;
+    }
+
+    .control-btn.primary {
+      background: #667eea;
+    }
+
+    .control-btn.primary:hover {
+      background: #5568d3;
+    }
+
+    #timer {
+      font-family: monospace;
+      font-size: 18px;
+      min-width: 60px;
+    }
+
+    /* 编辑模式 */
+    #editor-mode {
+      display: none;
+      height: 100vh;
+      flex-direction: column;
+      background: #2c2c2c;
+    }
+
+    #editor-mode.active {
+      display: flex;
+    }
+
+    .editor-header {
+      background: #1e1e1e;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #3c3c3c;
+    }
+
+    .editor-header h2 {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .editor-content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .preview-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #1e1e1e;
+      padding: 15px;
+      overflow: hidden;
+    }
+
+    .canvas-wrapper {
+      flex: 1;
+      background: #000;
+      border-radius: 4px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 15px;
+      overflow: hidden;
+    }
+
+    #edit-canvas {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .playback-bar {
+      background: #2c2c2c;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+
+    .playback-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .playback-btn {
+      background: #555;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .playback-btn:hover {
+      background: #666;
+    }
+
+    .frame-info {
+      font-size: 12px;
+      color: #aaa;
+      margin-left: auto;
+    }
+
+    .timeline-container {
+      background: #1a1a1a;
+      border-radius: 4px;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .timeline-frames {
+      display: flex;
+      height: 80px;
+    }
+
+    .frame-thumb {
+      flex-shrink: 0;
+      width: 60px;
+      height: 100%;
+      border-right: 1px solid #333;
+      cursor: pointer;
+      position: relative;
+      background-size: cover;
+      background-position: center;
+      transition: opacity 0.2s;
+    }
+
+    .frame-thumb:hover {
+      opacity: 0.7;
+    }
+
+    .frame-thumb.active {
+      border: 2px solid #667eea;
+      border-right: 2px solid #667eea;
+    }
+
+    .frame-number {
+      position: absolute;
+      bottom: 2px;
+      left: 2px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      font-size: 10px;
+      padding: 2px 4px;
+      border-radius: 2px;
+    }
+
+    .tools-panel {
+      width: 280px;
+      background: #1e1e1e;
+      border-left: 1px solid #3c3c3c;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .tool-section {
+      padding: 20px;
+      border-bottom: 1px solid #3c3c3c;
+    }
+
+    .tool-section h3 {
+      font-size: 14px;
+      margin-bottom: 15px;
+      color: #fff;
+      font-weight: 500;
+    }
+
+    .tool-group {
+      margin-bottom: 15px;
+    }
+
+    .tool-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .tool-group label {
+      display: block;
+      font-size: 12px;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+
+    .tool-input {
+      width: 100%;
+      background: #2c2c2c;
+      border: 1px solid #444;
+      color: white;
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .tool-input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .range-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .range-control input[type="range"] {
+      flex: 1;
+    }
+
+    .range-value {
+      min-width: 50px;
+      text-align: right;
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    .number-inputs {
+      display: flex;
+      gap: 10px;
+    }
+
+    .number-inputs input {
+      flex: 1;
+    }
+
+    .tool-btn {
+      width: 100%;
+      background: #667eea;
+      border: none;
+      color: white;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      margin-top: 10px;
+    }
+
+    .tool-btn:hover {
+      background: #5568d3;
+    }
+
+    .tool-btn.success {
+      background: #28a745;
+    }
+
+    .tool-btn.success:hover {
+      background: #218838;
+    }
+
+    .tool-hint {
+      font-size: 11px;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .export-info {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- 录制模式 -->
+  <div id="recorder-mode">
+    <div id="preview-area">
+      <canvas id="preview-canvas"></canvas>
+    </div>
+    <div id="recorder-controls">
+      <div id="recording-indicator"></div>
+      <span id="timer">00:00</span>
+      <button class="control-btn danger" id="stop-btn">停止录制</button>
+    </div>
+  </div>
+
+  <!-- 编辑模式 -->
+  <div id="editor-mode">
+    <div class="editor-header">
+      <h2>编辑 GIF</h2>
+      <div style="display: flex; gap: 10px;">
+        <button class="control-btn" id="re-record-btn">重新录制</button>
+        <button class="control-btn success" id="export-btn">导出 GIF</button>
+      </div>
+    </div>
+
+    <div class="editor-content">
+      <div class="preview-panel">
+        <div class="canvas-wrapper">
+          <canvas id="edit-canvas"></canvas>
+        </div>
+
+        <div class="playback-bar">
+          <div class="playback-controls">
+            <button class="playback-btn" id="play-btn">播放</button>
+            <button class="playback-btn" id="prev-frame-btn">上一帧</button>
+            <button class="playback-btn" id="next-frame-btn">下一帧</button>
+            <span class="frame-info" id="frame-counter">帧 1 / 1</span>
+          </div>
+
+          <div class="timeline-container">
+            <div class="timeline-frames" id="timeline-frames"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tools-panel">
+        <div class="tool-section">
+          <h3>裁剪帧</h3>
+          <div class="tool-group">
+            <label>开始帧</label>
+            <input type="number" class="tool-input" id="trim-start" min="0" value="0">
+          </div>
+          <div class="tool-group">
+            <label>结束帧</label>
+            <input type="number" class="tool-input" id="trim-end" min="0" value="0">
+          </div>
+          <button class="tool-btn" id="apply-trim-btn">应用裁剪</button>
+          <div class="tool-hint">删除选定范围外的帧</div>
+        </div>
+
+        <div class="tool-section">
+          <h3>播放速度</h3>
+          <div class="tool-group">
+            <label>每帧延迟</label>
+            <div class="range-control">
+              <input type="range" id="speed-slider" min="25" max="200" value="100" step="25">
+              <span class="range-value" id="speed-label">100ms</span>
+            </div>
+          </div>
+          <div class="tool-hint">调整帧之间的时间间隔</div>
+        </div>
+
+        <div class="tool-section">
+          <h3>压缩质量</h3>
+          <div class="tool-group">
+            <label>质量</label>
+            <div class="range-control">
+              <input type="range" id="quality-slider" min="1" max="100" value="80">
+              <span class="range-value" id="quality-label">80%</span>
+            </div>
+          </div>
+          <div class="tool-hint">降低质量可减小文件大小</div>
+          <div class="export-info" id="file-size-info">预计大小: 计算中...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="recorder.js"></script>
+</body>
+</html>
