@@ -19,6 +19,8 @@ let frames = [];
 let frameImages = [];
 let delay = 100;
 let recordingFPS = 10; // 默认录制帧率
+let playbackSpeed = 1; // 播放速度倍率
+let isLooping = true; // 是否循环播放
 
 // 获取元素
 const recorderMode = document.getElementById('recorder-mode');
@@ -591,8 +593,6 @@ function initializeEditor() {
   document.getElementById('trim-end').max = frameImages.length - 1;
   document.getElementById('trim-end').value = frameImages.length - 1;
   document.getElementById('trim-start').max = frameImages.length - 1;
-  document.getElementById('speed-slider').value = delay;
-  document.getElementById('speed-label').textContent = delay + 'ms';
 
   updateFrameCounter();
   estimateFileSize();
@@ -666,10 +666,25 @@ function startPlayback() {
   isPlaying = true;
   document.getElementById('play-btn').textContent = '暂停';
 
+  const actualDelay = delay / playbackSpeed; // 根据速度倍率调整延迟
+
   playInterval = setInterval(() => {
-    currentFrame = (currentFrame + 1) % frameImages.length;
+    currentFrame = currentFrame + 1;
+
+    // 检查是否到达最后一帧
+    if (currentFrame >= frameImages.length) {
+      if (isLooping) {
+        // 循环播放，从头开始
+        currentFrame = 0;
+      } else {
+        // 不循环，停止播放
+        stopPlayback();
+        currentFrame = frameImages.length - 1; // 停在最后一帧
+      }
+    }
+
     showFrame(currentFrame);
-  }, delay);
+  }, actualDelay);
 }
 
 function stopPlayback() {
@@ -691,6 +706,30 @@ document.getElementById('next-frame-btn').addEventListener('click', () => {
   showFrame((currentFrame + 1) % frameImages.length);
 });
 
+// 速度控制按钮
+document.querySelectorAll('.speed-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    // 移除所有按钮的 active 类
+    document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+    // 添加当前按钮的 active 类
+    btn.classList.add('active');
+
+    // 更新播放速度
+    playbackSpeed = parseFloat(btn.dataset.speed);
+
+    // 如果正在播放，重启播放以应用新速度
+    if (isPlaying) {
+      stopPlayback();
+      startPlayback();
+    }
+  });
+});
+
+// 循环播放复选框
+document.getElementById('loop-checkbox').addEventListener('change', (e) => {
+  isLooping = e.target.checked;
+});
+
 // 裁剪功能
 document.getElementById('apply-trim-btn').addEventListener('click', () => {
   const start = parseInt(document.getElementById('trim-start').value);
@@ -706,19 +745,6 @@ document.getElementById('apply-trim-btn').addEventListener('click', () => {
   currentFrame = 0;
 
   initializeEditor();
-});
-
-// 速度调整
-document.getElementById('speed-slider').addEventListener('input', (e) => {
-  delay = parseInt(e.target.value);
-  document.getElementById('speed-label').textContent = delay + 'ms';
-
-  if (isPlaying) {
-    stopPlayback();
-    startPlayback();
-  }
-
-  estimateFileSize();
 });
 
 // 质量调整

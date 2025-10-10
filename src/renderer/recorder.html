@@ -258,6 +258,60 @@
       background: #666;
     }
 
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 10px;
+    }
+
+    .speed-control label {
+      font-size: 12px;
+      color: #aaa;
+      white-space: nowrap;
+    }
+
+    .speed-btn {
+      background: #3c3c3c;
+      border: 1px solid #555;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .speed-btn:hover {
+      background: #4c4c4c;
+    }
+
+    .speed-btn.active {
+      background: #667eea;
+      border-color: #667eea;
+    }
+
+    .loop-control {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 10px;
+      font-size: 12px;
+      color: #aaa;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .loop-control input[type="checkbox"] {
+      cursor: pointer;
+      width: 16px;
+      height: 16px;
+    }
+
+    .loop-control:hover {
+      color: #ccc;
+    }
+
     .frame-info {
       font-size: 12px;
       color: #aaa;
@@ -533,6 +587,16 @@
             <button class="playback-btn" id="play-btn">播放</button>
             <button class="playback-btn" id="prev-frame-btn">上一帧</button>
             <button class="playback-btn" id="next-frame-btn">下一帧</button>
+            <div class="speed-control">
+              <label>速度:</label>
+              <button class="speed-btn" data-speed="0.5">0.5x</button>
+              <button class="speed-btn active" data-speed="1">1x</button>
+              <button class="speed-btn" data-speed="2">2x</button>
+            </div>
+            <label class="loop-control">
+              <input type="checkbox" id="loop-checkbox" checked>
+              <span>循环播放</span>
+            </label>
             <span class="frame-info" id="frame-counter">帧 1 / 1</span>
           </div>
 
@@ -555,18 +619,6 @@
           </div>
           <button class="tool-btn" id="apply-trim-btn">应用裁剪</button>
           <div class="tool-hint">删除选定范围外的帧</div>
-        </div>
-
-        <div class="tool-section">
-          <h3>播放速度</h3>
-          <div class="tool-group">
-            <label>每帧延迟</label>
-            <div class="range-control">
-              <input type="range" id="speed-slider" min="25" max="200" value="100" step="25">
-              <span class="range-value" id="speed-label">100ms</span>
-            </div>
-          </div>
-          <div class="tool-hint">调整帧之间的时间间隔</div>
         </div>
 
         <div class="tool-section">
