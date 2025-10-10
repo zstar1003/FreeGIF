@@ -324,66 +324,135 @@ function handleDataAvailable(event) {
 }
 
 async function handleStop() {
+  console.log('========== 开始处理录制停止 ==========');
   const blob = new Blob(recordedChunks, { type: 'video/webm' });
+  console.log('视频 blob 大小:', (blob.size / 1024 / 1024).toFixed(2), 'MB');
 
   // 停止所有轨道
-  stream.getTracks().forEach(track => track.stop());
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    console.log('已停止媒体流');
+  }
 
-  // 将视频转换为帧
-  const gifData = await convertToGIF(blob, recordingBounds);
+  // 隐藏录制模式
+  recorderMode.classList.add('hidden');
+  console.log('已隐藏录制模式');
 
-  // 切换到编辑模式
-  switchToEditorMode(gifData);
+  // 切换到编辑模式（但显示加载状态）
+  editorMode.classList.add('active');
+  console.log('已显示编辑模式');
+
+  // 立即显示加载提示
+  showLoading();
+
+  // 使用 setTimeout 让 UI 先渲染
+  setTimeout(async () => {
+    console.log('开始转换视频');
+    try {
+      // 将视频转换为帧
+      const gifData = await convertToGIF(blob, recordingBounds);
+
+      console.log('转换完成，帧数:', gifData.frames.length);
+
+      // 隐藏加载提示
+      hideLoading();
+
+      // 切换到编辑模式
+      switchToEditorMode(gifData);
+    } catch (error) {
+      console.error('转换失败:', error);
+      hideLoading();
+      alert('视频处理失败: ' + error.message + '\n\n请重新录制');
+
+      // 回到编辑模式主界面
+      showEmptyState();
+    }
+  }, 100);
+}
+
+function showLoading() {
+  console.log('显示加载提示');
+  const overlay = document.getElementById('loading-overlay');
+  overlay.classList.add('active');
+  overlay.style.display = 'flex'; // 强制显示
+  document.getElementById('loading-progress').textContent = '准备中...';
+  console.log('加载提示已显示，overlay display:', overlay.style.display);
+}
+
+function hideLoading() {
+  console.log('隐藏加载提示');
+  const overlay = document.getElementById('loading-overlay');
+  overlay.classList.remove('active');
+  overlay.style.display = 'none';
+}
+
+function updateLoadingProgress(current, total) {
+  document.getElementById('loading-progress').textContent = `${current} / ${total} 帧`;
 }
 
 async function convertToGIF(videoBlob, bounds) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const video = document.createElement('video');
     video.src = URL.createObjectURL(videoBlob);
     video.muted = true;
+    video.preload = 'auto';
 
-    video.onloadedmetadata = () => {
+    video.onloadedmetadata = async () => {
+      console.log('Video metadata loaded');
+      console.log('Video duration:', video.duration);
+      console.log('Recording time:', (Date.now() - recordingStartTime) / 1000, 'seconds');
+
+      // WebM 视频的 duration 可能是 Infinity，我们使用录制时间作为备选
+      let duration;
+      if (isFinite(video.duration) && video.duration > 0) {
+        duration = video.duration;
+        console.log('使用视频元数据时长:', duration);
+      } else {
+        // 使用录制时间计算（从开始到停止的实际时间）
+        duration = (Date.now() - recordingStartTime) / 1000;
+        console.log('视频时长无效，使用录制时间:', duration);
+      }
+
       const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
       canvas.width = bounds.width;
       canvas.height = bounds.height;
 
       const frameList = [];
-      const fps = 10;
-      const duration = video.duration;
-      // 增加最大帧数限制到 300 帧（可录制 30 秒 @ 10fps）
-      const totalFrames = Math.min(Math.floor(duration * fps), 300);
+      const fps = 10; // 目标帧率
+
+      // 计算实际应该提取的帧数
+      const actualFrames = Math.floor(duration * fps);
+      const totalFrames = Math.min(actualFrames, 300);
+
+      console.log(`视频时长: ${duration.toFixed(2)}s`);
+      console.log(`计算帧数: ${duration.toFixed(2)} * ${fps} = ${actualFrames}`);
+      console.log(`实际提取: ${totalFrames} 帧（最大限制300）`);
+
+      if (totalFrames <= 0) {
+        reject(new Error('录制时间过短，请录制至少1秒'));
+        return;
+      }
 
       let currentFrameNum = 0;
+      let lastSeekFailed = false;
 
-      video.onseeked = () => {
-        // 使用传递过来的显示器实际分辨率
-        const displayWidth = bounds.displayWidth || (window.screen.width * (bounds.scaleFactor || 1));
-        const displayHeight = bounds.displayHeight || (window.screen.height * (bounds.scaleFactor || 1));
+      // 更新初始进度
+      requestAnimationFrame(() => {
+        updateLoadingProgress(0, totalFrames);
+      });
 
-        const scaleX = video.videoWidth / displayWidth;
-        const scaleY = video.videoHeight / displayHeight;
+      const processNextFrame = () => {
+        if (currentFrameNum >= totalFrames || lastSeekFailed) {
+          // 所有帧处理完成或遇到无法 seek 的时间点
+          console.log(`帧提取完成，共提取 ${frameList.length} 帧`);
 
-        ctx.drawImage(
-          video,
-          bounds.x * scaleX,
-          bounds.y * scaleY,
-          bounds.width * scaleX,
-          bounds.height * scaleY,
-          0,
-          0,
-          bounds.width,
-          bounds.height
-        );
+          if (frameList.length === 0) {
+            reject(new Error('未能提取任何帧，请重试'));
+            return;
+          }
 
-        const frameData = canvas.toDataURL('image/png');
-        frameList.push(frameData);
-
-        currentFrameNum++;
-        if (currentFrameNum < totalFrames) {
-          video.currentTime = (currentFrameNum / fps);
-        } else {
           const gifData = {
             frames: frameList,
             width: bounds.width,
@@ -392,20 +461,83 @@ async function convertToGIF(videoBlob, bounds) {
           };
           URL.revokeObjectURL(video.src);
           resolve(gifData);
+          return;
+        }
+
+        // 计算当前帧对应的视频时间（秒）
+        const targetTime = (currentFrameNum / fps);
+
+        // 不要设置超出范围的时间
+        if (isFinite(video.duration) && targetTime >= video.duration) {
+          console.log(`时间 ${targetTime.toFixed(2)}s 超过视频时长，停止提取`);
+          lastSeekFailed = true;
+          processNextFrame(); // 触发完成逻辑
+          return;
+        }
+
+        video.currentTime = targetTime;
+      };
+
+      video.onseeked = () => {
+        try {
+          // 使用传递过来的显示器实际分辨率
+          const displayWidth = bounds.displayWidth || (window.screen.width * (bounds.scaleFactor || 1));
+          const displayHeight = bounds.displayHeight || (window.screen.height * (bounds.scaleFactor || 1));
+
+          const scaleX = video.videoWidth / displayWidth;
+          const scaleY = video.videoHeight / displayHeight;
+
+          ctx.drawImage(
+            video,
+            bounds.x * scaleX,
+            bounds.y * scaleY,
+            bounds.width * scaleX,
+            bounds.height * scaleY,
+            0,
+            0,
+            bounds.width,
+            bounds.height
+          );
+
+          const frameData = canvas.toDataURL('image/png');
+          frameList.push(frameData);
+
+          currentFrameNum++;
+
+          // 每10帧输出一次日志
+          if (currentFrameNum % 10 === 0 || currentFrameNum === totalFrames) {
+            console.log(`已提取 ${currentFrameNum} / ${totalFrames} 帧`);
+          }
+
+          // 使用 requestAnimationFrame 更新进度，保证 UI 流畅
+          requestAnimationFrame(() => {
+            updateLoadingProgress(currentFrameNum, totalFrames);
+          });
+
+          // 每处理 5 帧，使用 setTimeout 让出主线程
+          if (currentFrameNum % 5 === 0) {
+            setTimeout(processNextFrame, 1);
+          } else {
+            processNextFrame();
+          }
+        } catch (error) {
+          console.error('Frame extraction error:', error);
+          reject(error);
         }
       };
 
-      video.currentTime = 0;
+      video.onerror = (e) => {
+        console.error('Video loading error:', e);
+        reject(new Error('视频加载失败'));
+      };
+
+      // 开始处理第一帧
+      processNextFrame();
     };
 
     video.onerror = (e) => {
-      console.error('Video loading error:', e);
-      resolve({
-        frames: [],
-        width: bounds.width,
-        height: bounds.height,
-        delay: 100
-      });
+      console.error('Video error during load:', e);
+      reject(new Error('视频加载失败'));
     };
   });
 }
@@ -586,12 +718,6 @@ document.getElementById('speed-slider').addEventListener('input', (e) => {
 document.getElementById('quality-slider').addEventListener('input', (e) => {
   document.getElementById('quality-label').textContent = e.target.value + '%';
   estimateFileSize();
-});
-
-// 重新录制
-document.getElementById('re-record-btn').addEventListener('click', () => {
-  stopPlayback();
-  ipcRenderer.send('start-selection');
 });
 
 // 导出功能

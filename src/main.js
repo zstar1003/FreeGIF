@@ -90,6 +90,9 @@ function createRecorderWindow(bounds) {
   recorderWindow.loadFile('src/renderer/recorder.html');
   recorderWindow.setMenuBarVisibility(false); // 完全隐藏菜单栏
 
+  // 自动打开开发者工具，方便调试
+  recorderWindow.webContents.openDevTools();
+
   // 启用 remote 模块
   try {
     require('@electron/remote/main').enable(recorderWindow.webContents);
