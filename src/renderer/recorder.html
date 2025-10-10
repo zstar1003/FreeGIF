@@ -136,6 +136,46 @@
       overflow: hidden;
     }
 
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      gap: 20px;
+    }
+
+    .empty-state.hidden {
+      display: none;
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      opacity: 0.5;
+    }
+
+    .empty-state-text {
+      font-size: 18px;
+      text-align: center;
+    }
+
+    .empty-state-hint {
+      font-size: 14px;
+      color: #888;
+      text-align: center;
+    }
+
+    .editor-workspace {
+      flex: 1;
+      display: none;
+      overflow: hidden;
+    }
+
+    .editor-workspace.active {
+      display: flex;
+    }
+
     .preview-panel {
       flex: 1;
       display: flex;
@@ -358,7 +398,7 @@
 </head>
 <body>
   <!-- 录制模式 -->
-  <div id="recorder-mode">
+  <div id="recorder-mode" class="hidden">
     <div id="preview-area">
       <canvas id="preview-canvas"></canvas>
     </div>
@@ -370,16 +410,30 @@
   </div>
 
   <!-- 编辑模式 -->
-  <div id="editor-mode">
+  <div id="editor-mode" class="active">
     <div class="editor-header">
-      <h2>编辑 GIF</h2>
+      <h2>FreeGIF</h2>
       <div style="display: flex; gap: 10px;">
-        <button class="control-btn" id="re-record-btn">重新录制</button>
-        <button class="control-btn success" id="export-btn">导出 GIF</button>
+        <button class="control-btn primary" id="start-record-btn">
+          <span>📹</span> 开始录制
+        </button>
+        <button class="control-btn" id="import-gif-btn">
+          <span>📁</span> 导入 GIF
+        </button>
+        <button class="control-btn success" id="export-btn" style="display: none;">导出 GIF</button>
       </div>
     </div>
 
     <div class="editor-content">
+      <!-- 空状态 -->
+      <div class="empty-state" id="empty-state">
+        <div class="empty-state-icon">🎬</div>
+        <div class="empty-state-text">开始创建你的 GIF</div>
+        <div class="empty-state-hint">点击"开始录制"录制屏幕，或"导入 GIF"编辑现有文件</div>
+      </div>
+
+      <!-- 编辑工作区 -->
+      <div class="editor-workspace" id="editor-workspace">
       <div class="preview-panel">
         <div class="canvas-wrapper">
           <canvas id="edit-canvas"></canvas>

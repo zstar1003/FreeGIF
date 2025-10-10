@@ -22,14 +22,116 @@ let delay = 100;
 // 获取元素
 const recorderMode = document.getElementById('recorder-mode');
 const editorMode = document.getElementById('editor-mode');
+const emptyState = document.getElementById('empty-state');
+const editorWorkspace = document.getElementById('editor-workspace');
 const previewCanvas = document.getElementById('preview-canvas');
 const editCanvas = document.getElementById('edit-canvas');
 const previewCtx = previewCanvas.getContext('2d');
 const editCtx = editCanvas.getContext('2d');
 
+// ========== 初始化 ==========
+
+// 启动时显示空状态
+window.addEventListener('DOMContentLoaded', () => {
+  showEmptyState();
+});
+
+function showEmptyState() {
+  emptyState.classList.remove('hidden');
+  editorWorkspace.classList.remove('active');
+  document.getElementById('export-btn').style.display = 'none';
+}
+
+function hideEmptyState() {
+  emptyState.classList.add('hidden');
+  editorWorkspace.classList.add('active');
+  document.getElementById('export-btn').style.display = 'inline-block';
+}
+
+// ========== 开始录制按钮 ==========
+
+document.getElementById('start-record-btn').addEventListener('click', () => {
+  ipcRenderer.send('start-selection');
+});
+
+// ========== 导入 GIF 按钮 ==========
+
+document.getElementById('import-gif-btn').addEventListener('click', async () => {
+  let result;
+  try {
+    result = await ipcRenderer.invoke('show-open-dialog', {
+      title: '导入 GIF',
+      filters: [
+        { name: 'GIF 文件', extensions: ['gif'] }
+      ],
+      properties: ['openFile']
+    });
+  } catch (e) {
+    try {
+      const { dialog } = require('@electron/remote') || require('electron').remote;
+      result = await dialog.showOpenDialog({
+        title: '导入 GIF',
+        filters: [
+          { name: 'GIF 文件', extensions: ['gif'] }
+        ],
+        properties: ['openFile']
+      });
+    } catch (e2) {
+      alert('无法打开文件选择对话框');
+      return;
+    }
+  }
+
+  if (result.canceled || !result.filePaths || result.filePaths.length === 0) return;
+
+  const gifPath = result.filePaths[0];
+  await importGIF(gifPath);
+});
+
+async function importGIF(filePath) {
+  try {
+    // 读取 GIF 文件
+    const gifBuffer = fs.readFileSync(filePath);
+    const blob = new Blob([gifBuffer], { type: 'image/gif' });
+    const url = URL.createObjectURL(blob);
+
+    // 使用 Image 加载 GIF 获取尺寸
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = url;
+    });
+
+    // 简化版：将 GIF 作为单帧处理
+    // TODO: 实际应该解析 GIF 的所有帧
+    const gifData = {
+      frames: [url],
+      width: img.width,
+      height: img.height,
+      delay: 100
+    };
+
+    URL.revokeObjectURL(url);
+
+    // 切换到编辑模式
+    editorMode.classList.add('active');
+    recorderMode.classList.add('hidden');
+    switchToEditorMode(gifData);
+
+  } catch (error) {
+    console.error('Import GIF error:', error);
+    alert('导入 GIF 失败: ' + error.message);
+  }
+}
+
 // ========== 录制模式 ==========
 
 ipcRenderer.on('start-recording', async (event, bounds) => {
+  if (!bounds) {
+    console.log('No bounds provided, skipping recording');
+    return;
+  }
   recordingBounds = bounds;
   await startRecording(bounds);
 });
@@ -223,6 +325,7 @@ async function convertToGIF(videoBlob, bounds) {
 function switchToEditorMode(gifData) {
   recorderMode.classList.add('hidden');
   editorMode.classList.add('active');
+  hideEmptyState();
 
   frames = gifData.frames;
   delay = gifData.delay || 100;

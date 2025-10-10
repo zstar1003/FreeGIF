@@ -18,6 +18,7 @@ function createMainWindow() {
     height: 300,
     resizable: false,
     frame: true,
+    autoHideMenuBar: true, // 隐藏菜单栏
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -26,6 +27,7 @@ function createMainWindow() {
   });
 
   mainWindow.loadFile('src/renderer/index.html');
+  mainWindow.setMenuBarVisibility(false); // 完全隐藏菜单栏
 
   // 启用 remote 模块
   try {
@@ -77,6 +79,7 @@ function createRecorderWindow(bounds) {
   recorderWindow = new BrowserWindow({
     width: 1000,
     height: 700,
+    autoHideMenuBar: true, // 隐藏菜单栏
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -85,6 +88,7 @@ function createRecorderWindow(bounds) {
   });
 
   recorderWindow.loadFile('src/renderer/recorder.html');
+  recorderWindow.setMenuBarVisibility(false); // 完全隐藏菜单栏
 
   // 启用 remote 模块
   try {
@@ -95,7 +99,9 @@ function createRecorderWindow(bounds) {
 
   // 等待加载完成后发送录制指令
   recorderWindow.webContents.on('did-finish-load', () => {
-    recorderWindow.webContents.send('start-recording', bounds);
+    if (bounds) {
+      recorderWindow.webContents.send('start-recording', bounds);
+    }
   });
 
   recorderWindow.on('closed', () => {
@@ -103,7 +109,9 @@ function createRecorderWindow(bounds) {
   });
 }
 
-app.whenReady().then(createMainWindow);
+app.whenReady().then(() => {
+  createRecorderWindow(null); // 直接启动录制窗口
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -119,14 +127,11 @@ app.on('activate', () => {
 
 // IPC Handlers
 ipcMain.on('start-selection', () => {
-  // 如果已经有录制窗口，关闭它
+  // 隐藏录制窗口
   if (recorderWindow) {
-    recorderWindow.close();
+    recorderWindow.hide();
   }
-  // 隐藏主窗口
-  if (mainWindow) {
-    mainWindow.hide();
-  }
+
   setTimeout(() => {
     createSelectorWindow();
   }, 200);
@@ -137,7 +142,7 @@ ipcMain.on('cancel-selection', () => {
     selectorWindow.close();
   }
   if (recorderWindow) {
-    recorderWindow.close();
+    recorderWindow.show();
   }
   if (mainWindow) {
     mainWindow.show();
@@ -149,8 +154,11 @@ ipcMain.on('area-selected', (event, bounds) => {
   if (selectorWindow) {
     selectorWindow.close();
   }
-  // 创建录制窗口
-  createRecorderWindow(bounds);
+  // 显示录制窗口并发送录制指令
+  if (recorderWindow) {
+    recorderWindow.show();
+    recorderWindow.webContents.send('start-recording', bounds);
+  }
 });
 
 ipcMain.handle('get-sources', async () => {
@@ -161,7 +169,11 @@ ipcMain.handle('get-sources', async () => {
   return sources;
 });
 
-// 添加 dialog handler 作为备选方案
+// 添加 dialog handler
 ipcMain.handle('show-save-dialog', async (event, options) => {
   return await dialog.showSaveDialog(options);
+});
+
+ipcMain.handle('show-open-dialog', async (event, options) => {
+  return await dialog.showOpenDialog(options);
 });
