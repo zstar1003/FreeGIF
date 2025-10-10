@@ -133,15 +133,18 @@ ipcRenderer.on('start-recording', async (event, bounds) => {
     return;
   }
 
-  // 切换到录制模式
+  // 切换到录制模式（预览状态）
   editorMode.classList.remove('active');
   recorderMode.classList.remove('hidden');
 
   recordingBounds = bounds;
-  await startRecording(bounds);
+
+  // 设置预览模式，不立即开始录制
+  await setupPreviewMode(bounds);
 });
 
-async function startRecording(bounds) {
+// 设置预览模式（不立即录制）
+async function setupPreviewMode(bounds) {
   try {
     // 获取屏幕源
     const sources = await ipcRenderer.invoke('get-sources');
@@ -164,6 +167,51 @@ async function startRecording(bounds) {
 
     // 设置预览
     setupRecordingPreview(stream, bounds);
+
+    // 显示重新截取和开始录制按钮，隐藏停止按钮
+    document.getElementById('reselect-btn').style.display = 'inline-block';
+    document.getElementById('start-recording-btn').style.display = 'inline-block';
+    document.getElementById('stop-btn').style.display = 'none';
+    document.getElementById('recording-indicator').style.display = 'none';
+    document.getElementById('timer').style.display = 'none';
+
+  } catch (error) {
+    console.error('Error setting up preview:', error);
+    alert('预览失败: ' + error.message + '\n\n可能需要授予屏幕录制权限');
+    ipcRenderer.send('cancel-selection');
+  }
+}
+
+async function startRecording(bounds) {
+  try {
+    // 隐藏重新截取和开始按钮，显示停止按钮和计时器
+    document.getElementById('reselect-btn').style.display = 'none';
+    document.getElementById('start-recording-btn').style.display = 'none';
+    document.getElementById('stop-btn').style.display = 'inline-block';
+    document.getElementById('recording-indicator').style.display = 'block';
+    document.getElementById('timer').style.display = 'inline-block';
+
+    // 如果还没有 stream，需要重新获取
+    if (!stream) {
+      const sources = await ipcRenderer.invoke('get-sources');
+      const primarySource = sources[0];
+
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          mandatory: {
+            chromeMediaSource: 'desktop',
+            chromeMediaSourceId: primarySource.id,
+            minWidth: 1280,
+            maxWidth: 4000,
+            minHeight: 720,
+            maxHeight: 4000
+          }
+        }
+      });
+
+      setupRecordingPreview(stream, bounds);
+    }
 
     // 创建 MediaRecorder
     const options = { mimeType: 'video/webm; codecs=vp9' };
@@ -198,7 +246,8 @@ function setupRecordingPreview(mediaStream, bounds) {
 
   video.onloadedmetadata = () => {
     const updatePreview = () => {
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
+      // 预览模式下也要持续更新，不只是录制时
+      if (stream && stream.active) {
         // 使用传递过来的显示器实际分辨率
         const displayWidth = bounds.displayWidth || (window.screen.width * (bounds.scaleFactor || 1));
         const displayHeight = bounds.displayHeight || (window.screen.height * (bounds.scaleFactor || 1));
@@ -239,6 +288,33 @@ document.getElementById('stop-btn').addEventListener('click', () => {
     mediaRecorder.stop();
     clearInterval(timerInterval);
   }
+});
+
+// 开始录制按钮（预览模式下点击）
+document.getElementById('start-recording-btn').addEventListener('click', () => {
+  if (recordingBounds) {
+    startRecording(recordingBounds);
+  }
+});
+
+// 重新截取按钮（预览模式下点击）
+document.getElementById('reselect-btn').addEventListener('click', () => {
+  // 停止当前的预览流
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+
+  // 清空预览画布
+  if (previewCtx) {
+    previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+  }
+
+  // 重置录制边界
+  recordingBounds = null;
+
+  // 隐藏录制窗口，打开选择器
+  ipcRenderer.send('start-selection');
 });
 
 function handleDataAvailable(event) {
