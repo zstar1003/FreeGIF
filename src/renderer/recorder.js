@@ -18,6 +18,7 @@ let playInterval = null;
 let frames = [];
 let frameImages = [];
 let delay = 100;
+let recordingFPS = 10; // 默认录制帧率
 
 // 获取元素
 const recorderMode = document.getElementById('recorder-mode');
@@ -168,7 +169,8 @@ async function setupPreviewMode(bounds) {
     // 设置预览
     setupRecordingPreview(stream, bounds);
 
-    // 显示重新截取和开始录制按钮，隐藏停止按钮
+    // 显示帧率选择、重新截取和开始录制按钮，隐藏停止按钮
+    document.getElementById('fps-control').style.display = 'flex';
     document.getElementById('reselect-btn').style.display = 'inline-block';
     document.getElementById('start-recording-btn').style.display = 'inline-block';
     document.getElementById('stop-btn').style.display = 'none';
@@ -184,7 +186,12 @@ async function setupPreviewMode(bounds) {
 
 async function startRecording(bounds) {
   try {
-    // 隐藏重新截取和开始按钮，显示停止按钮和计时器
+    // 读取用户选择的帧率
+    recordingFPS = parseInt(document.getElementById('fps-select').value);
+    console.log('录制帧率设置为:', recordingFPS, 'FPS');
+
+    // 隐藏帧率选择、重新截取和开始按钮，显示停止按钮和计时器
+    document.getElementById('fps-control').style.display = 'none';
     document.getElementById('reselect-btn').style.display = 'none';
     document.getElementById('start-recording-btn').style.display = 'none';
     document.getElementById('stop-btn').style.display = 'inline-block';
@@ -420,7 +427,7 @@ async function convertToGIF(videoBlob, bounds) {
       canvas.height = bounds.height;
 
       const frameList = [];
-      const fps = 10; // 目标帧率
+      const fps = recordingFPS; // 使用用户设置的帧率
 
       // 计算实际应该提取的帧数
       const actualFrames = Math.floor(duration * fps);

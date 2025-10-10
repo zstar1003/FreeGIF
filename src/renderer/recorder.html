@@ -104,6 +104,34 @@
       min-width: 60px;
     }
 
+    .fps-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #aaa;
+    }
+
+    .fps-control label {
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .fps-control select {
+      background: #2c2c2c;
+      border: 1px solid #444;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .fps-control select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
     /* 编辑模式 */
     #editor-mode {
       display: none;
@@ -453,6 +481,17 @@
     <div id="recorder-controls">
       <div id="recording-indicator"></div>
       <span id="timer">00:00</span>
+      <div class="fps-control" id="fps-control" style="display: none;">
+        <label>帧率:</label>
+        <select id="fps-select">
+          <option value="5">5 FPS</option>
+          <option value="10" selected>10 FPS</option>
+          <option value="15">15 FPS</option>
+          <option value="20">20 FPS</option>
+          <option value="25">25 FPS</option>
+          <option value="30">30 FPS</option>
+        </select>
+      </div>
       <button class="control-btn" id="reselect-btn" style="display: none;">重新截取</button>
       <button class="control-btn primary" id="start-recording-btn" style="display: none;">开始录制</button>
       <button class="control-btn danger" id="stop-btn">停止录制</button>
