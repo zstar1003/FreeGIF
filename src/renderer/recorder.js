@@ -132,6 +132,11 @@ ipcRenderer.on('start-recording', async (event, bounds) => {
     console.log('No bounds provided, skipping recording');
     return;
   }
+
+  // 切换到录制模式
+  editorMode.classList.remove('active');
+  recorderMode.classList.remove('hidden');
+
   recordingBounds = bounds;
   await startRecording(bounds);
 });
@@ -194,8 +199,12 @@ function setupRecordingPreview(mediaStream, bounds) {
   video.onloadedmetadata = () => {
     const updatePreview = () => {
       if (mediaRecorder && mediaRecorder.state === 'recording') {
-        const scaleX = video.videoWidth / window.screen.width;
-        const scaleY = video.videoHeight / window.screen.height;
+        // 使用传递过来的显示器实际分辨率
+        const displayWidth = bounds.displayWidth || (window.screen.width * (bounds.scaleFactor || 1));
+        const displayHeight = bounds.displayHeight || (window.screen.height * (bounds.scaleFactor || 1));
+
+        const scaleX = video.videoWidth / displayWidth;
+        const scaleY = video.videoHeight / displayHeight;
 
         previewCtx.drawImage(
           video,
@@ -272,8 +281,12 @@ async function convertToGIF(videoBlob, bounds) {
       let currentFrameNum = 0;
 
       video.onseeked = () => {
-        const scaleX = video.videoWidth / window.screen.width;
-        const scaleY = video.videoHeight / window.screen.height;
+        // 使用传递过来的显示器实际分辨率
+        const displayWidth = bounds.displayWidth || (window.screen.width * (bounds.scaleFactor || 1));
+        const displayHeight = bounds.displayHeight || (window.screen.height * (bounds.scaleFactor || 1));
+
+        const scaleX = video.videoWidth / displayWidth;
+        const scaleY = video.videoHeight / displayHeight;
 
         ctx.drawImage(
           video,
