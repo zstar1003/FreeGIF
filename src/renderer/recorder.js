@@ -1,7 +1,9 @@
 const { ipcRenderer, desktopCapturer } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const GIF = require('gif.js');
+
+// gif.js 通过 script 标签加载，挂载到全局 window.GIF
+// 不需要 require
 
 // 录制相关变量
 let mediaRecorder;
@@ -803,7 +805,7 @@ document.getElementById('export-btn').addEventListener('click', async () => {
 async function exportGIF(filePath, quality) {
   return new Promise((resolve, reject) => {
     try {
-      const gif = new GIF({
+      const gif = new window.GIF({
         workers: 2,
         quality: Math.floor((100 - quality) / 10) + 1,
         width: editCanvas.width,
