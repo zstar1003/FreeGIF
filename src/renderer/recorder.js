@@ -352,7 +352,8 @@ async function convertToGIF(videoBlob, bounds) {
       const frameList = [];
       const fps = 10;
       const duration = video.duration;
-      const totalFrames = Math.min(Math.floor(duration * fps), 100);
+      // 增加最大帧数限制到 300 帧（可录制 30 秒 @ 10fps）
+      const totalFrames = Math.min(Math.floor(duration * fps), 300);
 
       let currentFrameNum = 0;
 
