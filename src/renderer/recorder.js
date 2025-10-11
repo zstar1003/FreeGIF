@@ -83,7 +83,7 @@ document.getElementById('import-gif-btn').addEventListener('click', async () => 
         properties: ['openFile']
       });
     } catch (e2) {
-      alert('无法打开文件选择对话框');
+      showNotification('无法打开文件选择对话框', 'error');
       return;
     }
   }
@@ -101,7 +101,7 @@ async function importGIF(filePath) {
     recorderMode.classList.add('hidden');
 
     // 立即显示加载提示
-    showLoading();
+    showLoading('正在导入 GIF...');
     document.getElementById('loading-progress').textContent = '正在读取 GIF...';
 
     // 使用 setTimeout 让 UI 先渲染
@@ -200,7 +200,7 @@ async function importGIF(filePath) {
   } catch (error) {
     console.error('Import GIF error:', error);
     hideLoading();
-    alert('导入 GIF 失败: ' + (error.message || '未知错误'));
+    showNotification('导入 GIF 失败: ' + (error.message || '未知错误'), 'error');
 
     // 发生错误时回到空状态
     showEmptyState();
@@ -260,7 +260,7 @@ async function setupPreviewMode(bounds) {
 
   } catch (error) {
     console.error('Error setting up preview:', error);
-    alert('预览失败: ' + error.message + '\n\n可能需要授予屏幕录制权限');
+    showNotification('预览失败: ' + error.message + '\n\n可能需要授予屏幕录制权限', 'error');
     ipcRenderer.send('cancel-selection');
   }
 }
@@ -318,7 +318,7 @@ async function startRecording(bounds) {
 
   } catch (error) {
     console.error('Error starting recording:', error);
-    alert('录制失败: ' + error.message + '\n\n可能需要授予屏幕录制权限');
+    showNotification('录制失败: ' + error.message + '\n\n可能需要授予屏幕录制权限', 'error');
     ipcRenderer.send('cancel-selection');
   }
 }
@@ -431,7 +431,7 @@ async function handleStop() {
   console.log('已显示编辑模式');
 
   // 立即显示加载提示
-  showLoading();
+  showLoading('正在处理视频...');
 
   // 使用 setTimeout 让 UI 先渲染
   setTimeout(async () => {
@@ -450,7 +450,7 @@ async function handleStop() {
     } catch (error) {
       console.error('转换失败:', error);
       hideLoading();
-      alert('视频处理失败: ' + error.message + '\n\n请重新录制');
+      showNotification('视频处理失败: ' + error.message + '\n\n请重新录制', 'error');
 
       // 回到编辑模式主界面
       showEmptyState();
@@ -458,11 +458,12 @@ async function handleStop() {
   }, 100);
 }
 
-function showLoading() {
+function showLoading(title = '正在处理...') {
   console.log('显示加载提示');
   const overlay = document.getElementById('loading-overlay');
   overlay.classList.add('active');
   overlay.style.display = 'flex'; // 强制显示
+  document.querySelector('.loading-text').textContent = title;
   document.getElementById('loading-progress').textContent = '准备中...';
   console.log('加载提示已显示，overlay display:', overlay.style.display);
 }
@@ -477,6 +478,44 @@ function hideLoading() {
 function updateLoadingProgress(current, total) {
   document.getElementById('loading-progress').textContent = `${current} / ${total} 帧`;
 }
+
+// ========== 通知弹窗 ==========
+
+function showNotification(message, type = 'success') {
+  const modal = document.getElementById('notification-modal');
+  const icon = document.getElementById('notification-icon');
+  const messageEl = document.getElementById('notification-message');
+
+  // 设置图标和样式
+  icon.className = 'notification-icon ' + type;
+  if (type === 'success') {
+    icon.textContent = '✓';
+  } else if (type === 'error') {
+    icon.textContent = '✕';
+  } else if (type === 'info') {
+    icon.textContent = 'ℹ';
+  }
+
+  messageEl.textContent = message;
+  modal.classList.add('active');
+}
+
+function hideNotification() {
+  const modal = document.getElementById('notification-modal');
+  modal.classList.remove('active');
+}
+
+// 点击确定按钮关闭通知
+document.getElementById('notification-btn').addEventListener('click', () => {
+  hideNotification();
+});
+
+// 点击背景关闭通知
+document.getElementById('notification-modal').addEventListener('click', (e) => {
+  if (e.target.id === 'notification-modal') {
+    hideNotification();
+  }
+});
 
 async function convertToGIF(videoBlob, bounds) {
   return new Promise((resolve, reject) => {
@@ -661,7 +700,7 @@ async function loadFrameImages() {
   if (frameImages.length > 0) {
     initializeEditor();
   } else {
-    alert('加载帧数据失败，请重试');
+    showNotification('加载帧数据失败，请重试', 'error');
   }
 }
 
@@ -815,7 +854,7 @@ document.getElementById('apply-trim-btn').addEventListener('click', () => {
   const end = parseInt(document.getElementById('trim-end').value);
 
   if (start >= end) {
-    alert('开始帧必须小于结束帧');
+    showNotification('开始帧必须小于结束帧', 'error');
     return;
   }
 
@@ -929,7 +968,7 @@ document.getElementById('export-btn').addEventListener('click', async () => {
         ]
       });
     } catch (e2) {
-      alert('无法打开保存对话框');
+      showNotification('无法打开保存对话框', 'error');
       return;
     }
   }
@@ -937,17 +976,17 @@ document.getElementById('export-btn').addEventListener('click', async () => {
   if (result.canceled || !result.filePath) return;
 
   // 显示加载提示
-  showLoading();
-  document.getElementById('loading-progress').textContent = '正在导出 GIF...';
+  showLoading('正在导出 GIF...');
+  document.getElementById('loading-progress').textContent = '准备导出...';
 
   try {
     await exportGIF(result.filePath, quality);
     hideLoading();
-    alert('GIF 导出成功！');
+    showNotification('GIF 导出成功！', 'success');
   } catch (error) {
     console.error('Export error:', error);
     hideLoading();
-    alert('导出失败: ' + error.message);
+    showNotification('导出失败: ' + error.message, 'error');
   }
 });
 
@@ -992,12 +1031,12 @@ async function exportGIF(filePath, quality) {
       gif.on('progress', (progress) => {
         const percent = Math.round(progress * 100);
         requestAnimationFrame(() => {
-          document.getElementById('loading-progress').textContent = `正在导出: ${percent}%`;
+          document.getElementById('loading-progress').textContent = `编码中 ${percent}%`;
         });
       });
 
       gif.on('finished', (blob) => {
-        document.getElementById('loading-progress').textContent = '正在保存文件...';
+        document.getElementById('loading-progress').textContent = '写入文件...';
 
         const reader = new FileReader();
         reader.onload = () => {

@@ -5,6 +5,9 @@ let mainWindow;
 let selectorWindow;
 let recorderWindow;
 
+// 图标路径
+const iconPath = path.join(__dirname, 'public', 'logo.ico');
+
 // 尝试启用 remote 模块（如果需要）
 try {
     require('@electron/remote/main').initialize();
@@ -19,6 +22,7 @@ function createMainWindow() {
         resizable: false,
         frame: true,
         autoHideMenuBar: true, // 隐藏菜单栏
+        icon: iconPath, // 设置窗口图标
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
@@ -53,6 +57,7 @@ function createSelectorWindow() {
         resizable: false,
         movable: false,
         fullscreen: true,
+        icon: iconPath, // 设置窗口图标
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
@@ -80,6 +85,7 @@ function createRecorderWindow(bounds) {
         width: 1200,
         height: 880,
         autoHideMenuBar: true, // 隐藏菜单栏
+        icon: iconPath, // 设置窗口图标
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
