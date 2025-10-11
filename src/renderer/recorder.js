@@ -580,11 +580,10 @@ async function convertToGIF(videoBlob, bounds) {
 
       // 计算实际应该提取的帧数
       const actualFrames = Math.floor(duration * fps);
-      const totalFrames = Math.min(actualFrames, 300);
+      const totalFrames = actualFrames; // 移除帧数限制
 
       console.log(`视频时长: ${duration.toFixed(2)}s`);
       console.log(`计算帧数: ${duration.toFixed(2)} * ${fps} = ${actualFrames}`);
-      console.log(`实际提取: ${totalFrames} 帧（最大限制300）`);
 
       if (totalFrames <= 0) {
         reject(new Error('录制时间过短，请录制至少1秒'));
