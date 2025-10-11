@@ -1,6 +1,7 @@
 const { ipcRenderer, desktopCapturer } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const omggif = require('omggif');
 
 // gif.js 通过 script 标签加载，挂载到全局 window.GIF
 // 不需要 require
@@ -95,29 +96,85 @@ document.getElementById('import-gif-btn').addEventListener('click', async () => 
 
 async function importGIF(filePath) {
   try {
+    // 显示加载提示
+    showLoading();
+    document.getElementById('loading-progress').textContent = '正在解析 GIF...';
+
     // 读取 GIF 文件
     const gifBuffer = fs.readFileSync(filePath);
-    const blob = new Blob([gifBuffer], { type: 'image/gif' });
-    const url = URL.createObjectURL(blob);
 
-    // 使用 Image 加载 GIF 获取尺寸
-    const img = new Image();
-    await new Promise((resolve, reject) => {
-      img.onload = resolve;
-      img.onerror = reject;
-      img.src = url;
-    });
+    // 使用 omggif 解析 GIF
+    const gifReader = new omggif.GifReader(new Uint8Array(gifBuffer));
 
-    // 简化版：将 GIF 作为单帧处理
-    // TODO: 实际应该解析 GIF 的所有帧
+    const frameCount = gifReader.numFrames();
+    const width = gifReader.width;
+    const height = gifReader.height;
+
+    console.log(`GIF 信息: ${width}x${height}, ${frameCount} 帧`);
+
+    if (frameCount === 0) {
+      throw new Error('GIF 文件中没有找到帧');
+    }
+
+    const frames = [];
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = width;
+    canvas.height = height;
+
+    // 解析每一帧
+    for (let i = 0; i < frameCount; i++) {
+      try {
+        // 获取帧信息
+        const frameInfo = gifReader.frameInfo(i);
+
+        // 创建像素数组
+        const pixels = new Uint8ClampedArray(width * height * 4);
+
+        // 解码帧
+        gifReader.decodeAndBlitFrameRGBA(i, pixels);
+
+        // 创建 ImageData
+        const imageData = new ImageData(pixels, width, height);
+
+        // 绘制到 canvas
+        ctx.putImageData(imageData, 0, 0);
+
+        // 转换为 dataURL
+        const dataURL = canvas.toDataURL('image/png');
+        frames.push(dataURL);
+
+        // 更新进度
+        if (i % 5 === 0 || i === frameCount - 1) {
+          document.getElementById('loading-progress').textContent =
+            `解析中: ${i + 1} / ${frameCount} 帧`;
+        }
+
+      } catch (frameError) {
+        console.error(`解析第 ${i} 帧失败:`, frameError);
+        // 继续解析下一帧
+      }
+    }
+
+    if (frames.length === 0) {
+      throw new Error('无法解析任何帧');
+    }
+
+    console.log(`成功解析 ${frames.length} 帧`);
+
+    // 获取第一帧的延迟时间
+    const firstFrameInfo = gifReader.frameInfo(0);
+    const delay = (firstFrameInfo.delay || 10) * 10; // GIF delay 是 1/100 秒
+
     const gifData = {
-      frames: [url],
-      width: img.width,
-      height: img.height,
-      delay: 100
+      frames: frames,
+      width: width,
+      height: height,
+      delay: delay
     };
 
-    URL.revokeObjectURL(url);
+    // 隐藏加载提示
+    hideLoading();
 
     // 切换到编辑模式
     editorMode.classList.add('active');
@@ -126,7 +183,8 @@ async function importGIF(filePath) {
 
   } catch (error) {
     console.error('Import GIF error:', error);
-    alert('导入 GIF 失败: ' + error.message);
+    hideLoading();
+    alert('导入 GIF 失败: ' + (error.message || '未知错误'));
   }
 }
 

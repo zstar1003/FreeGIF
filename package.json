@@ -7,7 +7,12 @@
     "start": "electron .",
     "dev": "electron . --dev"
   },
-  "keywords": ["gif", "recorder", "screen", "capture"],
+  "keywords": [
+    "gif",
+    "recorder",
+    "screen",
+    "capture"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
@@ -15,6 +20,7 @@
   },
   "dependencies": {
     "@electron/remote": "^2.1.2",
-    "gif.js": "^0.2.0"
+    "gif.js": "^0.2.0",
+    "omggif": "^1.0.10"
   }
 }
