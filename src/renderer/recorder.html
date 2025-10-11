@@ -403,6 +403,57 @@
       margin-bottom: 8px;
     }
 
+    .tool-subgroup {
+      margin-bottom: 12px;
+      padding-left: 10px;
+    }
+
+    .tool-subgroup:last-child {
+      margin-bottom: 0;
+    }
+
+    .tool-subgroup label {
+      display: block;
+      font-size: 11px;
+      color: #999;
+      margin-bottom: 6px;
+    }
+
+    .advanced-toggle {
+      cursor: pointer;
+      user-select: none;
+      padding: 8px 0;
+      color: #667eea;
+      font-size: 12px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .advanced-toggle:hover {
+      color: #5568d3;
+    }
+
+    .advanced-toggle span {
+      display: inline-block;
+      transition: transform 0.2s;
+    }
+
+    .advanced-toggle.expanded span {
+      transform: rotate(90deg);
+    }
+
+    .advanced-settings {
+      margin-top: 10px;
+      padding: 12px;
+      background: #1a1a1a;
+      border-radius: 4px;
+      border-left: 2px solid #667eea;
+    }
+
+    .advanced-settings.hidden {
+      display: none;
+    }
+
     .tool-input {
       width: 100%;
       background: #2c2c2c;
@@ -630,15 +681,54 @@
         </div>
 
         <div class="tool-section">
-          <h3>压缩质量</h3>
+          <h3>压缩设置</h3>
+
+          <!-- 预设质量档位 -->
           <div class="tool-group">
-            <label>质量</label>
-            <div class="range-control">
-              <input type="range" id="quality-slider" min="1" max="100" value="80">
-              <span class="range-value" id="quality-label">80%</span>
+            <label>质量预设</label>
+            <select class="tool-input" id="quality-preset">
+              <option value="high">高质量 (文件较大)</option>
+              <option value="medium" selected>标准质量 (推荐)</option>
+              <option value="low">压缩优先 (文件最小)</option>
+              <option value="custom">自定义</option>
+            </select>
+          </div>
+
+          <!-- 高级设置折叠面板 -->
+          <div class="tool-group">
+            <div class="advanced-toggle" id="advanced-toggle">
+              <span>▶ 高级设置</span>
+            </div>
+            <div class="advanced-settings hidden" id="advanced-settings">
+              <div class="tool-subgroup">
+                <label>颜色采样质量</label>
+                <div class="range-control">
+                  <input type="range" id="quality-slider" min="1" max="100" value="70">
+                  <span class="range-value" id="quality-label">70%</span>
+                </div>
+              </div>
+
+              <div class="tool-subgroup">
+                <label>抖动处理</label>
+                <select class="tool-input" id="dither-select">
+                  <option value="false">关闭</option>
+                  <option value="FalseFloydSteinberg">简化抖动</option>
+                  <option value="FloydSteinberg" selected>Floyd-Steinberg</option>
+                  <option value="Stucki">Stucki</option>
+                  <option value="Atkinson">Atkinson</option>
+                </select>
+              </div>
+
+              <div class="tool-subgroup">
+                <label>调色板模式</label>
+                <select class="tool-input" id="palette-select">
+                  <option value="local" selected>局部调色板</option>
+                  <option value="global">全局调色板</option>
+                </select>
+              </div>
             </div>
           </div>
-          <div class="tool-hint">降低质量可减小文件大小</div>
+
           <div class="export-info" id="file-size-info">预计大小: 计算中...</div>
         </div>
       </div>

@@ -749,9 +749,75 @@ document.getElementById('apply-trim-btn').addEventListener('click', () => {
   initializeEditor();
 });
 
-// 质量调整
+// 质量预设配置
+const qualityPresets = {
+  high: {
+    quality: 90,
+    dither: 'FloydSteinberg',
+    palette: 'local',
+    description: '高质量模式 - 颜色准确,细节丰富,文件较大'
+  },
+  medium: {
+    quality: 70,
+    dither: 'FloydSteinberg',
+    palette: 'local',
+    description: '标准质量 - 质量与大小平衡,适合大多数场景'
+  },
+  low: {
+    quality: 40,
+    dither: 'FalseFloydSteinberg',
+    palette: 'global',
+    description: '压缩优先 - 文件最小,适合快速分享'
+  }
+};
+
+// 质量预设切换
+document.getElementById('quality-preset').addEventListener('change', (e) => {
+  const preset = e.target.value;
+
+  if (preset === 'custom') {
+    // 切换到自定义模式,展开高级设置
+    const advancedSettings = document.getElementById('advanced-settings');
+    const advancedToggle = document.getElementById('advanced-toggle');
+    advancedSettings.classList.remove('hidden');
+    advancedToggle.classList.add('expanded');
+  } else {
+    // 应用预设
+    const config = qualityPresets[preset];
+    document.getElementById('quality-slider').value = config.quality;
+    document.getElementById('quality-label').textContent = config.quality + '%';
+    document.getElementById('dither-select').value = config.dither;
+    document.getElementById('palette-select').value = config.palette;
+
+    estimateFileSize();
+  }
+});
+
+// 高级设置折叠/展开
+document.getElementById('advanced-toggle').addEventListener('click', () => {
+  const advancedSettings = document.getElementById('advanced-settings');
+  const advancedToggle = document.getElementById('advanced-toggle');
+
+  advancedSettings.classList.toggle('hidden');
+  advancedToggle.classList.toggle('expanded');
+});
+
+// 质量调整 - 切换到自定义模式
 document.getElementById('quality-slider').addEventListener('input', (e) => {
   document.getElementById('quality-label').textContent = e.target.value + '%';
+  document.getElementById('quality-preset').value = 'custom';
+  estimateFileSize();
+});
+
+// 抖动选择 - 切换到自定义模式
+document.getElementById('dither-select').addEventListener('change', () => {
+  document.getElementById('quality-preset').value = 'custom';
+  estimateFileSize();
+});
+
+// 调色板选择 - 切换到自定义模式
+document.getElementById('palette-select').addEventListener('change', () => {
+  document.getElementById('quality-preset').value = 'custom';
   estimateFileSize();
 });
 
@@ -805,11 +871,20 @@ document.getElementById('export-btn').addEventListener('click', async () => {
 async function exportGIF(filePath, quality) {
   return new Promise((resolve, reject) => {
     try {
+      // 读取用户设置
+      const ditherValue = document.getElementById('dither-select').value;
+      const paletteMode = document.getElementById('palette-select').value;
+
+      // 处理抖动参数
+      const ditherOption = ditherValue === 'false' ? false : ditherValue + '-serpentine';
+
       const gif = new window.GIF({
         workers: 2,
         quality: Math.floor((100 - quality) / 10) + 1,
         width: editCanvas.width,
         height: editCanvas.height,
+        dither: ditherOption,
+        globalPalette: paletteMode === 'global',
         workerScript: path.join(__dirname, '../../node_modules/gif.js/dist/gif.worker.js')
       });
 
@@ -852,8 +927,36 @@ function estimateFileSize() {
   const pixelCount = editCanvas.width * editCanvas.height;
   const frameCount = frameImages.length;
 
+  // 读取抖动和调色板设置
+  const ditherValue = document.getElementById('dither-select').value;
+  const paletteMode = document.getElementById('palette-select').value;
+
+  // 基础字节数计算
   const bytesPerPixel = (quality / 100) * 3;
-  const estimatedBytes = pixelCount * frameCount * bytesPerPixel * 0.5;
+
+  // 抖动系数 (抖动会增加细节,降低LZW压缩效率)
+  let ditherFactor = 1.0;
+  if (ditherValue !== 'false') {
+    ditherFactor = 1.2; // 抖动大约增加 20% 文件大小
+  }
+
+  // 调色板系数 (全局调色板更小)
+  let paletteFactor = 1.0;
+  if (paletteMode === 'global') {
+    // 全局调色板节省 (768字节 × (帧数-1))
+    const paletteSavings = 768 * (frameCount - 1);
+    paletteFactor = 0.95; // 大约减少 5%
+  }
+
+  // LZW 压缩率 (假设 3x,实际取决于图像复杂度)
+  const lzwCompressionRatio = 3;
+
+  // 估算公式
+  let estimatedBytes = (pixelCount * frameCount * bytesPerPixel * ditherFactor * paletteFactor * 0.5) / lzwCompressionRatio;
+
+  // 添加帧头部、调色板等开销
+  const headerOverhead = frameCount * 800 + 2000; // 每帧约800字节开销
+  estimatedBytes += headerOverhead;
 
   let sizeStr;
   if (estimatedBytes < 1024) {
@@ -864,5 +967,7 @@ function estimateFileSize() {
     sizeStr = (estimatedBytes / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
-  document.getElementById('file-size-info').textContent = `预计大小: ${sizeStr}`;
+  // 显示详细信息
+  const detailsText = `预计大小: ${sizeStr} (${frameCount} 帧, ${editCanvas.width}×${editCanvas.height})`;
+  document.getElementById('file-size-info').textContent = detailsText;
 }
