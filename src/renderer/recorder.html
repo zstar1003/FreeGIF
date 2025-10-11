@@ -153,9 +153,14 @@
       border-bottom: 1px solid #3c3c3c;
     }
 
-    .editor-header h2 {
-      font-size: 16px;
-      font-weight: 500;
+    .header-left {
+      display: flex;
+      gap: 10px;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 10px;
     }
 
     .editor-content {
@@ -555,15 +560,18 @@
   <!-- 编辑模式 -->
   <div id="editor-mode" class="active">
     <div class="editor-header">
-      <h2>FreeGIF</h2>
-      <div style="display: flex; gap: 10px;">
+      <div class="header-left">
         <button class="control-btn primary" id="start-record-btn">
-          <span>📹</span> 开始录制
+          📹 开始录制
         </button>
         <button class="control-btn" id="import-gif-btn">
-          <span>📁</span> 导入 GIF
+          📁 导入 GIF
         </button>
-        <button class="control-btn success" id="export-btn" style="display: none;">导出 GIF</button>
+      </div>
+      <div class="header-right">
+        <button class="control-btn success" id="export-btn" style="display: none;">
+          💾 导出 GIF
+        </button>
       </div>
     </div>
 
