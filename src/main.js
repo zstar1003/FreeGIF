@@ -82,8 +82,8 @@ function createSelectorWindow() {
 
 function createRecorderWindow(bounds) {
     recorderWindow = new BrowserWindow({
-        width: 1200,
-        height: 880,
+        width: 1400,
+        height: 980,
         autoHideMenuBar: true, // 隐藏菜单栏
         icon: iconPath, // 设置窗口图标
         webPreferences: {
