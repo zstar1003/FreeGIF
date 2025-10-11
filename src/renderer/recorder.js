@@ -770,7 +770,7 @@ function renderTimeline() {
 
     const frameNum = document.createElement('div');
     frameNum.className = 'frame-number';
-    frameNum.textContent = index;
+    frameNum.textContent = index + 1; // 从1开始显示
     thumb.appendChild(frameNum);
 
     thumb.addEventListener('click', () => {
@@ -793,6 +793,27 @@ function showFrame(index) {
   });
 
   updateFrameCounter();
+
+  // 播放时自动滚动时间轴
+  if (isPlaying) {
+    const timelineContainer = document.querySelector('.timeline-container');
+    const activeThumb = document.querySelector('.frame-thumb.active');
+
+    if (timelineContainer && activeThumb) {
+      const containerWidth = timelineContainer.clientWidth;
+      const thumbWidth = 60; // 缩略图宽度
+      const thumbPosition = index * thumbWidth;
+
+      // 计算滚动位置，使当前帧保持在视野左侧1/4处
+      const targetScroll = thumbPosition - containerWidth / 4;
+
+      // 平滑滚动
+      timelineContainer.scrollTo({
+        left: Math.max(0, targetScroll),
+        behavior: 'smooth'
+      });
+    }
+  }
 }
 
 function updateFrameCounter() {
