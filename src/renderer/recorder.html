@@ -427,18 +427,22 @@
       font-size: 12px;
       font-weight: 500;
       transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .advanced-toggle:hover {
       color: #5568d3;
     }
 
-    .advanced-toggle span {
+    .advanced-toggle .arrow {
       display: inline-block;
       transition: transform 0.2s;
+      font-size: 10px;
     }
 
-    .advanced-toggle.expanded span {
+    .advanced-toggle.expanded .arrow {
       transform: rotate(90deg);
     }
 
@@ -697,9 +701,20 @@
           <!-- 高级设置折叠面板 -->
           <div class="tool-group">
             <div class="advanced-toggle" id="advanced-toggle">
-              <span>▶ 高级设置</span>
+              <span class="arrow">▶</span>
+              <span>高级设置</span>
             </div>
             <div class="advanced-settings hidden" id="advanced-settings">
+              <div class="tool-subgroup">
+                <label>输出分辨率</label>
+                <select class="tool-input" id="resolution-scale">
+                  <option value="1" selected>原始尺寸 (100%)</option>
+                  <option value="0.75">75% (推荐)</option>
+                  <option value="0.5">50% (大幅减小)</option>
+                  <option value="0.25">25% (极小)</option>
+                </select>
+              </div>
+
               <div class="tool-subgroup">
                 <label>颜色采样质量</label>
                 <div class="range-control">

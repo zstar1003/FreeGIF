@@ -809,6 +809,12 @@ document.getElementById('quality-slider').addEventListener('input', (e) => {
   estimateFileSize();
 });
 
+// 分辨率缩放 - 切换到自定义模式
+document.getElementById('resolution-scale').addEventListener('change', () => {
+  document.getElementById('quality-preset').value = 'custom';
+  estimateFileSize();
+});
+
 // 抖动选择 - 切换到自定义模式
 document.getElementById('dither-select').addEventListener('change', () => {
   document.getElementById('quality-preset').value = 'custom';
@@ -874,15 +880,20 @@ async function exportGIF(filePath, quality) {
       // 读取用户设置
       const ditherValue = document.getElementById('dither-select').value;
       const paletteMode = document.getElementById('palette-select').value;
+      const resolutionScale = parseFloat(document.getElementById('resolution-scale').value);
 
       // 处理抖动参数
       const ditherOption = ditherValue === 'false' ? false : ditherValue + '-serpentine';
 
+      // 计算输出尺寸
+      const outputWidth = Math.round(editCanvas.width * resolutionScale);
+      const outputHeight = Math.round(editCanvas.height * resolutionScale);
+
       const gif = new window.GIF({
         workers: 2,
         quality: Math.floor((100 - quality) / 10) + 1,
-        width: editCanvas.width,
-        height: editCanvas.height,
+        width: outputWidth,
+        height: outputHeight,
         dither: ditherOption,
         globalPalette: paletteMode === 'global',
         workerScript: path.join(__dirname, '../../node_modules/gif.js/dist/gif.worker.js')
@@ -890,10 +901,12 @@ async function exportGIF(filePath, quality) {
 
       frameImages.forEach((img) => {
         const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = editCanvas.width;
-        tempCanvas.height = editCanvas.height;
+        tempCanvas.width = outputWidth;
+        tempCanvas.height = outputHeight;
         const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.drawImage(img, 0, 0, editCanvas.width, editCanvas.height);
+
+        // 缩放绘制
+        tempCtx.drawImage(img, 0, 0, outputWidth, outputHeight);
 
         gif.addFrame(tempCanvas, { delay: delay, copy: true });
       });
@@ -924,7 +937,12 @@ async function exportGIF(filePath, quality) {
 
 function estimateFileSize() {
   const quality = parseInt(document.getElementById('quality-slider').value);
-  const pixelCount = editCanvas.width * editCanvas.height;
+  const resolutionScale = parseFloat(document.getElementById('resolution-scale').value);
+
+  // 使用缩放后的尺寸计算
+  const outputWidth = Math.round(editCanvas.width * resolutionScale);
+  const outputHeight = Math.round(editCanvas.height * resolutionScale);
+  const pixelCount = outputWidth * outputHeight;
   const frameCount = frameImages.length;
 
   // 读取抖动和调色板设置
@@ -943,8 +961,6 @@ function estimateFileSize() {
   // 调色板系数 (全局调色板更小)
   let paletteFactor = 1.0;
   if (paletteMode === 'global') {
-    // 全局调色板节省 (768字节 × (帧数-1))
-    const paletteSavings = 768 * (frameCount - 1);
     paletteFactor = 0.95; // 大约减少 5%
   }
 
@@ -968,6 +984,6 @@ function estimateFileSize() {
   }
 
   // 显示详细信息
-  const detailsText = `预计大小: ${sizeStr} (${frameCount} 帧, ${editCanvas.width}×${editCanvas.height})`;
+  const detailsText = `预计大小: ${sizeStr} (${frameCount} 帧, ${outputWidth}×${outputHeight})`;
   document.getElementById('file-size-info').textContent = detailsText;
 }
