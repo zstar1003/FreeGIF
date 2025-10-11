@@ -710,35 +710,41 @@ function switchToEditorMode(gifData) {
   editCanvas.width = gifData.width;
   editCanvas.height = gifData.height;
 
-  loadFrameImages();
+  // 不再预加载所有图片，改为懒加载
+  frameImages = []; // 清空
+  initializeEditor();
 }
 
-async function loadFrameImages() {
-  frameImages = await Promise.all(frames.map(dataURL => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
-      img.src = dataURL;
-    });
-  }));
+// 懒加载帧图片 - 只在需要时创建
+function getFrameImage(index) {
+  return new Promise((resolve, reject) => {
+    // 如果已经加载过，直接返回
+    if (frameImages[index]) {
+      resolve(frameImages[index]);
+      return;
+    }
 
-  frameImages = frameImages.filter(img => img !== null);
-
-  if (frameImages.length > 0) {
-    initializeEditor();
-  } else {
-    showNotification('加载帧数据失败，请重试', 'error');
-  }
+    // 创建新的 Image 对象
+    const img = new Image();
+    img.onload = () => {
+      frameImages[index] = img;
+      resolve(img);
+    };
+    img.onerror = () => reject(new Error(`加载第 ${index + 1} 帧失败`));
+    img.src = frames[index];
+  });
 }
 
 function initializeEditor() {
   renderTimeline();
   showFrame(0);
 
-  document.getElementById('trim-end').max = frameImages.length - 1;
-  document.getElementById('trim-end').value = frameImages.length - 1;
-  document.getElementById('trim-start').max = frameImages.length - 1;
+  // 设置裁剪帧的范围和默认值（从1开始显示）
+  document.getElementById('trim-start').min = 1;
+  document.getElementById('trim-start').value = 1;
+  document.getElementById('trim-end').min = 1;
+  document.getElementById('trim-end').max = frames.length;
+  document.getElementById('trim-end').value = frames.length;
 
   updateFrameCounter();
   updateResolutionInfo();
@@ -749,24 +755,13 @@ function renderTimeline() {
   const timeline = document.getElementById('timeline-frames');
   timeline.innerHTML = '';
 
-  frameImages.forEach((img, index) => {
+  frames.forEach((frame, index) => {
     const thumb = document.createElement('div');
     thumb.className = 'frame-thumb';
     thumb.dataset.frameIndex = index;
 
-    const thumbCanvas = document.createElement('canvas');
-    thumbCanvas.width = 60;
-    thumbCanvas.height = 80;
-    const thumbCtx = thumbCanvas.getContext('2d');
-
-    const scale = Math.min(60 / img.width, 80 / img.height);
-    const w = img.width * scale;
-    const h = img.height * scale;
-    const x = (60 - w) / 2;
-    const y = (80 - h) / 2;
-
-    thumbCtx.drawImage(img, x, y, w, h);
-    thumb.style.backgroundImage = `url(${thumbCanvas.toDataURL()})`;
+    // 不再生成缩略图，使用纯色背景
+    thumb.style.backgroundColor = '#1a1a1a';
 
     const frameNum = document.createElement('div');
     frameNum.className = 'frame-number';
@@ -781,12 +776,19 @@ function renderTimeline() {
   });
 }
 
-function showFrame(index) {
-  if (index < 0 || index >= frameImages.length) return;
+async function showFrame(index) {
+  if (index < 0 || index >= frames.length) return;
 
   currentFrame = index;
-  editCtx.clearRect(0, 0, editCanvas.width, editCanvas.height);
-  editCtx.drawImage(frameImages[index], 0, 0, editCanvas.width, editCanvas.height);
+
+  // 懒加载当前帧图片
+  try {
+    const img = await getFrameImage(index);
+    editCtx.clearRect(0, 0, editCanvas.width, editCanvas.height);
+    editCtx.drawImage(img, 0, 0, editCanvas.width, editCanvas.height);
+  } catch (error) {
+    console.error('显示帧失败:', error);
+  }
 
   document.querySelectorAll('.frame-thumb').forEach((thumb, i) => {
     thumb.classList.toggle('active', i === index);
@@ -807,10 +809,13 @@ function showFrame(index) {
       // 计算滚动位置，使当前帧保持在视野左侧1/4处
       const targetScroll = thumbPosition - containerWidth / 4;
 
-      // 平滑滚动
+      // 如果是循环回到第一帧（index=0），使用瞬间滚动
+      const scrollBehavior = (index === 0) ? 'auto' : 'smooth';
+
+      // 滚动
       timelineContainer.scrollTo({
         left: Math.max(0, targetScroll),
-        behavior: 'smooth'
+        behavior: scrollBehavior
       });
     }
   }
@@ -818,7 +823,7 @@ function showFrame(index) {
 
 function updateFrameCounter() {
   document.getElementById('frame-counter').textContent =
-    `帧 ${currentFrame + 1} / ${frameImages.length}`;
+    `帧 ${currentFrame + 1} / ${frames.length}`;
 }
 
 function updateResolutionInfo() {
@@ -846,14 +851,14 @@ function startPlayback() {
     currentFrame = currentFrame + 1;
 
     // 检查是否到达最后一帧
-    if (currentFrame >= frameImages.length) {
+    if (currentFrame >= frames.length) {
       if (isLooping) {
         // 循环播放，从头开始
         currentFrame = 0;
       } else {
         // 不循环，停止播放
         stopPlayback();
-        currentFrame = frameImages.length - 1; // 停在最后一帧
+        currentFrame = frames.length - 1; // 停在最后一帧
       }
     }
 
@@ -872,12 +877,12 @@ function stopPlayback() {
 
 document.getElementById('prev-frame-btn').addEventListener('click', () => {
   stopPlayback();
-  showFrame(currentFrame - 1 >= 0 ? currentFrame - 1 : frameImages.length - 1);
+  showFrame(currentFrame - 1 >= 0 ? currentFrame - 1 : frames.length - 1);
 });
 
 document.getElementById('next-frame-btn').addEventListener('click', () => {
   stopPlayback();
-  showFrame((currentFrame + 1) % frameImages.length);
+  showFrame((currentFrame + 1) % frames.length);
 });
 
 // 速度控制按钮
@@ -906,16 +911,21 @@ document.getElementById('loop-checkbox').addEventListener('change', (e) => {
 
 // 裁剪功能
 document.getElementById('apply-trim-btn').addEventListener('click', () => {
-  const start = parseInt(document.getElementById('trim-start').value);
-  const end = parseInt(document.getElementById('trim-end').value);
+  // 用户输入的是1-based，转换为0-based索引
+  const start = parseInt(document.getElementById('trim-start').value) - 1;
+  const end = parseInt(document.getElementById('trim-end').value) - 1;
 
-  if (start >= end) {
-    showNotification('开始帧必须小于结束帧', 'error');
+  if (start < 0 || end >= frames.length || start > end) {
+    showNotification('帧范围无效，请检查输入', 'error');
     return;
   }
 
   stopPlayback();
+
+  // 裁剪 frames 数组和 frameImages 数组
+  frames = frames.slice(start, end + 1);
   frameImages = frameImages.slice(start, end + 1);
+
   currentFrame = 0;
 
   initializeEditor();
@@ -1047,7 +1057,7 @@ document.getElementById('export-btn').addEventListener('click', async () => {
 });
 
 async function exportGIF(filePath, quality) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       // 读取用户设置
       const ditherValue = document.getElementById('dither-select').value;
@@ -1071,7 +1081,9 @@ async function exportGIF(filePath, quality) {
         workerScript: path.join(__dirname, '../../node_modules/gif.js/dist/gif.worker.js')
       });
 
-      frameImages.forEach((img) => {
+      // 懒加载所有帧并添加到GIF
+      for (let i = 0; i < frames.length; i++) {
+        const img = await getFrameImage(i);
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = outputWidth;
         tempCanvas.height = outputHeight;
@@ -1081,7 +1093,7 @@ async function exportGIF(filePath, quality) {
         tempCtx.drawImage(img, 0, 0, outputWidth, outputHeight);
 
         gif.addFrame(tempCanvas, { delay: delay, copy: true });
-      });
+      }
 
       // 监听编码进度
       gif.on('progress', (progress) => {
@@ -1125,7 +1137,7 @@ function estimateFileSize() {
   const outputWidth = Math.round(editCanvas.width * resolutionScale);
   const outputHeight = Math.round(editCanvas.height * resolutionScale);
   const pixelCount = outputWidth * outputHeight;
-  const frameCount = frameImages.length;
+  const frameCount = frames.length; // 使用 frames.length 而不是 frameImages.length
 
   // 读取抖动和调色板设置
   const ditherValue = document.getElementById('dither-select').value;

@@ -373,13 +373,13 @@
         
         .frame-number {
             position: absolute;
-            bottom: 2px;
-            left: 2px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            font-size: 10px;
-            padding: 2px 4px;
-            border-radius: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #888;
+            font-size: 14px;
+            font-weight: 500;
+            user-select: none;
         }
         
         .tools-panel {
@@ -890,11 +890,11 @@
                         <h3>裁剪帧</h3>
                         <div class="tool-group">
                             <label>开始帧</label>
-                            <input type="number" class="tool-input" id="trim-start" min="0" value="0">
+                            <input type="number" class="tool-input" id="trim-start" min="1" value="1">
                         </div>
                         <div class="tool-group">
                             <label>结束帧</label>
-                            <input type="number" class="tool-input" id="trim-end" min="0" value="0">
+                            <input type="number" class="tool-input" id="trim-end" min="1" value="1">
                         </div>
                         <button class="tool-btn" id="apply-trim-btn">应用裁剪</button>
                         <div class="tool-hint">删除选定范围外的帧</div>
