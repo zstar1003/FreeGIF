@@ -936,18 +936,18 @@ document.getElementById('export-btn').addEventListener('click', async () => {
 
   if (result.canceled || !result.filePath) return;
 
-  document.getElementById('export-btn').disabled = true;
-  document.getElementById('export-btn').textContent = '导出中...';
+  // 显示加载提示
+  showLoading();
+  document.getElementById('loading-progress').textContent = '正在导出 GIF...';
 
   try {
     await exportGIF(result.filePath, quality);
+    hideLoading();
     alert('GIF 导出成功！');
   } catch (error) {
     console.error('Export error:', error);
+    hideLoading();
     alert('导出失败: ' + error.message);
-  } finally {
-    document.getElementById('export-btn').disabled = false;
-    document.getElementById('export-btn').textContent = '导出 GIF';
   }
 });
 
@@ -988,7 +988,17 @@ async function exportGIF(filePath, quality) {
         gif.addFrame(tempCanvas, { delay: delay, copy: true });
       });
 
+      // 监听编码进度
+      gif.on('progress', (progress) => {
+        const percent = Math.round(progress * 100);
+        requestAnimationFrame(() => {
+          document.getElementById('loading-progress').textContent = `正在导出: ${percent}%`;
+        });
+      });
+
       gif.on('finished', (blob) => {
+        document.getElementById('loading-progress').textContent = '正在保存文件...';
+
         const reader = new FileReader();
         reader.onload = () => {
           const buffer = Buffer.from(reader.result);
