@@ -31,6 +31,7 @@
   "build": {
     "appId": "com.freegif.app",
     "productName": "FreeGIF",
+    "publish": null,
     "directories": {
       "output": "dist"
     },
