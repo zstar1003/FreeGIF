@@ -60,7 +60,7 @@
           ]
         }
       ],
-      "icon": "src/public/logo.ico",
+      "icon": "src/public/logo.png",
       "category": "public.app-category.graphics-design"
     },
     "linux": {
