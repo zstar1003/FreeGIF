@@ -96,12 +96,22 @@ document.getElementById('import-gif-btn').addEventListener('click', async () => 
 
 async function importGIF(filePath) {
   try {
-    // 显示加载提示
+    // 切换到编辑模式并显示加载提示
+    editorMode.classList.add('active');
+    recorderMode.classList.add('hidden');
+
+    // 立即显示加载提示
     showLoading();
-    document.getElementById('loading-progress').textContent = '正在解析 GIF...';
+    document.getElementById('loading-progress').textContent = '正在读取 GIF...';
+
+    // 使用 setTimeout 让 UI 先渲染
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     // 读取 GIF 文件
     const gifBuffer = fs.readFileSync(filePath);
+
+    document.getElementById('loading-progress').textContent = '正在解析 GIF...';
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     // 使用 omggif 解析 GIF
     const gifReader = new omggif.GifReader(new Uint8Array(gifBuffer));
@@ -144,10 +154,18 @@ async function importGIF(filePath) {
         const dataURL = canvas.toDataURL('image/png');
         frames.push(dataURL);
 
-        // 更新进度
-        if (i % 5 === 0 || i === frameCount - 1) {
-          document.getElementById('loading-progress').textContent =
-            `解析中: ${i + 1} / ${frameCount} 帧`;
+        // 更新进度 (使用 requestAnimationFrame 保证 UI 流畅)
+        await new Promise(resolve => {
+          requestAnimationFrame(() => {
+            document.getElementById('loading-progress').textContent =
+              `${i + 1} / ${frameCount} 帧`;
+            resolve();
+          });
+        });
+
+        // 每处理 5 帧,让出主线程
+        if (i % 5 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 1));
         }
 
       } catch (frameError) {
@@ -177,14 +195,15 @@ async function importGIF(filePath) {
     hideLoading();
 
     // 切换到编辑模式
-    editorMode.classList.add('active');
-    recorderMode.classList.add('hidden');
     switchToEditorMode(gifData);
 
   } catch (error) {
     console.error('Import GIF error:', error);
     hideLoading();
     alert('导入 GIF 失败: ' + (error.message || '未知错误'));
+
+    // 发生错误时回到空状态
+    showEmptyState();
   }
 }
 
