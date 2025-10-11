@@ -329,15 +329,15 @@
             color: #aaa;
             margin-left: auto;
         }
-
+        
         #resolution-info {
             margin-right: 0px;
         }
-
+        
         #frame-counter {
             margin-left: 8px;
         }
-
+        
         .timeline-container {
             background: #1a1a1a;
             border-radius: 4px;
@@ -694,6 +694,110 @@
         .notification-btn:hover {
             background: #5568d3;
         }
+        /* 关于软件弹窗 */
+        
+        #about-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100001;
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        #about-modal.active {
+            display: flex;
+        }
+        
+        .about-content {
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 35px 45px;
+            min-width: 400px;
+            max-width: 500px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.3s ease-out;
+            border: 1px solid #3c3c3c;
+        }
+        
+        .about-title {
+            font-size: 28px;
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .about-version {
+            font-size: 14px;
+            color: #aaa;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .about-divider {
+            height: 1px;
+            background: #3c3c3c;
+            margin-bottom: 20px;
+        }
+        
+        .about-info {
+            margin-bottom: 25px;
+        }
+        
+        .about-item {
+            display: flex;
+            margin-bottom: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .about-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .about-label {
+            color: #aaa;
+            min-width: 90px;
+            flex-shrink: 0;
+        }
+        
+        .about-value {
+            color: #fff;
+        }
+        
+        .about-link {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .about-link:hover {
+            color: #5568d3;
+            text-decoration: underline;
+        }
+        
+        .about-btn {
+            width: 100%;
+            background: #667eea;
+            border: none;
+            color: white;
+            padding: 10px 40px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .about-btn:hover {
+            background: #5568d3;
+        }
     </style>
 </head>
 
@@ -735,6 +839,9 @@
         </button>
             </div>
             <div class="header-right">
+                <button class="control-btn" id="about-btn">
+          关于软件
+        </button>
             </div>
         </div>
 
@@ -881,6 +988,34 @@
                 <div class="notification-icon" id="notification-icon">✓</div>
                 <div class="notification-message" id="notification-message">操作成功</div>
                 <button class="notification-btn" id="notification-btn">确定</button>
+            </div>
+        </div>
+
+        <!-- 关于软件弹窗 -->
+        <div id="about-modal">
+            <div class="about-content">
+                <h2 class="about-title">FreeGIF</h2>
+                <div class="about-version">v1.0.0</div>
+                <div class="about-divider"></div>
+                <div class="about-info">
+                    <div class="about-item">
+                        <span class="about-label">制作者：</span>
+                        <span class="about-value">zstar</span>
+                    </div>
+                    <div class="about-item">
+                        <span class="about-label">微信公众号：</span>
+                        <span class="about-value">我有一计</span>
+                    </div>
+                    <div class="about-item">
+                        <span class="about-label">理念：</span>
+                        <span class="about-value">一直致力于构建免费好用的软件</span>
+                    </div>
+                    <div class="about-item">
+                        <span class="about-label">项目地址：</span>
+                        <a class="about-link" href="https://github.com/zstar1003/FreeGIF" target="_blank">https://github.com/zstar1003/FreeGIF</a>
+                    </div>
+                </div>
+                <button class="about-btn" id="about-close-btn">关闭</button>
             </div>
         </div>
 

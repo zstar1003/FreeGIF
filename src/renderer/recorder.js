@@ -517,6 +517,35 @@ document.getElementById('notification-modal').addEventListener('click', (e) => {
   }
 });
 
+// ========== 关于软件弹窗 ==========
+
+function showAbout() {
+  const modal = document.getElementById('about-modal');
+  modal.classList.add('active');
+}
+
+function hideAbout() {
+  const modal = document.getElementById('about-modal');
+  modal.classList.remove('active');
+}
+
+// 点击关于按钮显示弹窗
+document.getElementById('about-btn').addEventListener('click', () => {
+  showAbout();
+});
+
+// 点击关闭按钮关闭弹窗
+document.getElementById('about-close-btn').addEventListener('click', () => {
+  hideAbout();
+});
+
+// 点击背景关闭弹窗
+document.getElementById('about-modal').addEventListener('click', (e) => {
+  if (e.target.id === 'about-modal') {
+    hideAbout();
+  }
+});
+
 async function convertToGIF(videoBlob, bounds) {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
