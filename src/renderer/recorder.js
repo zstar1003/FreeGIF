@@ -713,6 +713,7 @@ function initializeEditor() {
   document.getElementById('trim-start').max = frameImages.length - 1;
 
   updateFrameCounter();
+  updateResolutionInfo();
   estimateFileSize();
 }
 
@@ -769,6 +770,12 @@ function showFrame(index) {
 function updateFrameCounter() {
   document.getElementById('frame-counter').textContent =
     `帧 ${currentFrame + 1} / ${frameImages.length}`;
+}
+
+function updateResolutionInfo() {
+  const width = editCanvas.width;
+  const height = editCanvas.height;
+  document.getElementById('resolution-info').textContent = `分辨率 ${width} x ${height}`;
 }
 
 // 播放控制
