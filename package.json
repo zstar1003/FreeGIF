@@ -51,6 +51,13 @@
       ],
       "icon": "src/public/logo.ico"
     },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FreeGIF"
+    },
     "mac": {
       "target": [
         {
