@@ -2,7 +2,9 @@
 
 一个基于 Electron 的免费 GIF 屏幕录制和编辑工具。
 
-[English](README_EN.md) | 简体中文
+操作演示：https://www.bilibili.com/video/BV1bU43zYE7m
+
+简体中文 | [English](README_EN.md)
 
 ## ✨ 功能特性
 
@@ -21,10 +23,9 @@
 
 ### 方式 1：下载预编译版本（推荐）
 
-访问 [Releases 页面](https://github.com/zstar1003/FreeGIF/releases) 下载最新版本：
-
-- **Windows**: `FreeGIF-Setup-x.x.x.exe`
-- **macOS**: `FreeGIF-x.x.x.dmg` (支持 Intel 和 Apple Silicon)
+- **Windows**:https://github.com/zstar1003/FreeGIF/releases/download/v1.0.0/FreeGIF.Setup.1.0.0.exe
+- **macOS(arm)**:https://github.com/zstar1003/FreeGIF/releases/download/v1.0.0/FreeGIF-1.0.0-arm64.dmg
+- **macOS(x86)**:https://github.com/zstar1003/FreeGIF/releases/download/v1.0.0/FreeGIF-1.0.0.dmg
 
 ### 方式 2：从源码运行
 

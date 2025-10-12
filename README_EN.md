@@ -2,6 +2,8 @@
 
 A free GIF screen recorder and editor based on Electron.
 
+demo:https://www.bilibili.com/video/BV1bU43zYE7m
+
 English | [简体中文](README.md)
 
 ## ✨ Features
@@ -21,10 +23,9 @@ English | [简体中文](README.md)
 
 ### Method 1: Download Pre-built Version (Recommended)
 
-Visit [Releases Page](https://github.com/zstar1003/FreeGIF/releases) to download the latest version:
-
-- **Windows**: `FreeGIF-Setup-x.x.x.exe`
-- **macOS**: `FreeGIF-x.x.x.dmg` (Supports Intel and Apple Silicon)
+- **Windows**:https://github.com/zstar1003/FreeGIF/releases/download/v1.0.0/FreeGIF.Setup.1.0.0.exe
+- **macOS(arm)**:https://github.com/zstar1003/FreeGIF/releases/download/v1.0.0/FreeGIF-1.0.0-arm64.dmg
+- **macOS(x86)**:https://github.com/zstar1003/FreeGIF/releases/download/v1.0.0/FreeGIF-1.0.0.dmg
 
 ### Method 2: Run from Source
 
