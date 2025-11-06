@@ -369,6 +369,128 @@
             cursor: text;
         }
 
+        /* 裁剪覆盖层 */
+        #crop-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+        }
+
+        #crop-area {
+            position: absolute;
+            border: 2px solid #667eea;
+            background: transparent;
+            cursor: move;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+        }
+
+        .crop-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #667eea;
+            border: 2px solid white;
+            border-radius: 50%;
+            z-index: 10;
+        }
+
+        .crop-handle-nw {
+            top: -6px;
+            left: -6px;
+            cursor: nw-resize;
+        }
+
+        .crop-handle-ne {
+            top: -6px;
+            right: -6px;
+            cursor: ne-resize;
+        }
+
+        .crop-handle-sw {
+            bottom: -6px;
+            left: -6px;
+            cursor: sw-resize;
+        }
+
+        .crop-handle-se {
+            bottom: -6px;
+            right: -6px;
+            cursor: se-resize;
+        }
+
+        .crop-handle-n {
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: n-resize;
+        }
+
+        .crop-handle-s {
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: s-resize;
+        }
+
+        .crop-handle-w {
+            top: 50%;
+            left: -6px;
+            transform: translateY(-50%);
+            cursor: w-resize;
+        }
+
+        .crop-handle-e {
+            top: 50%;
+            right: -6px;
+            transform: translateY(-50%);
+            cursor: e-resize;
+        }
+
+        .crop-toolbar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background: rgba(30, 30, 30, 0.95);
+            padding: 10px 15px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .crop-toolbar-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .crop-toolbar-btn.apply {
+            background: #667eea;
+            color: white;
+        }
+
+        .crop-toolbar-btn.apply:hover {
+            background: #5568d3;
+        }
+
+        .crop-toolbar-btn.cancel {
+            background: #555;
+            color: white;
+        }
+
+        .crop-toolbar-btn.cancel:hover {
+            background: #666;
+        }
+
         .playback-bar {
             background: #2c2c2c;
             padding: 15px;
@@ -1257,6 +1379,9 @@
                 <button class="control-btn" id="add-text-btn" style="display: none;">
           ✏️ 添加文本
         </button>
+                <button class="control-btn" id="crop-btn" style="display: none;">
+          ✂️ 裁剪画面
+        </button>
             </div>
             <div class="header-right">
                 <button class="control-btn" id="about-btn">
@@ -1320,6 +1445,22 @@
                     <div class="canvas-wrapper">
                         <canvas id="edit-canvas"></canvas>
                         <div id="text-overlay-container"></div>
+                        <div id="crop-overlay" style="display: none;">
+                            <div id="crop-area">
+                                <div class="crop-handle crop-handle-nw"></div>
+                                <div class="crop-handle crop-handle-ne"></div>
+                                <div class="crop-handle crop-handle-sw"></div>
+                                <div class="crop-handle crop-handle-se"></div>
+                                <div class="crop-handle crop-handle-n"></div>
+                                <div class="crop-handle crop-handle-s"></div>
+                                <div class="crop-handle crop-handle-w"></div>
+                                <div class="crop-handle crop-handle-e"></div>
+                            </div>
+                            <div class="crop-toolbar">
+                                <button class="crop-toolbar-btn apply" id="apply-crop-btn">✓ 应用</button>
+                                <button class="crop-toolbar-btn cancel" id="cancel-crop-btn">✕ 取消</button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="playback-bar">

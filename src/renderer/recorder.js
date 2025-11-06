@@ -32,6 +32,15 @@ let isDraggingText = false;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 
+// 裁剪系统
+let isCropping = false;
+let cropArea = { x: 0, y: 0, width: 0, height: 0 };
+let isDraggingCrop = false;
+let isResizingCrop = false;
+let resizeHandle = null;
+let cropStartX = 0;
+let cropStartY = 0;
+
 // 获取元素
 const recorderMode = document.getElementById('recorder-mode');
 const editorMode = document.getElementById('editor-mode');
@@ -60,6 +69,7 @@ function hideEmptyState() {
   editorWorkspace.classList.add('active');
   document.getElementById('export-btn').style.display = 'inline-block';
   document.getElementById('add-text-btn').style.display = 'inline-block';
+  document.getElementById('crop-btn').style.display = 'inline-block';
 }
 
 // ========== 开始录制按钮 ==========
@@ -1563,3 +1573,253 @@ function estimateFileSize() {
   const detailsText = `预计大小: ${sizeStr} (${frameCount} 帧, ${outputWidth}×${outputHeight})`;
   document.getElementById('file-size-info').textContent = detailsText;
 }
+
+// ========== 裁剪功能 ==========
+
+document.getElementById('crop-btn').addEventListener('click', () => {
+  enterCropMode();
+});
+
+function enterCropMode() {
+  isCropping = true;
+  stopPlayback();
+
+  // 隐藏文本工具栏
+  hideToolbar();
+
+  // 显示裁剪覆盖层
+  const cropOverlay = document.getElementById('crop-overlay');
+  cropOverlay.style.display = 'block';
+
+  // 获取canvas的实际显示尺寸和位置
+  const canvas = document.getElementById('edit-canvas');
+  const canvasRect = canvas.getBoundingClientRect();
+  const wrapper = document.querySelector('.canvas-wrapper');
+  const wrapperRect = wrapper.getBoundingClientRect();
+
+  // 计算canvas相对于wrapper的偏移
+  const offsetX = canvasRect.left - wrapperRect.left;
+  const offsetY = canvasRect.top - wrapperRect.top;
+
+  // 初始化裁剪区域为canvas的80%居中
+  const initialWidth = canvasRect.width * 0.8;
+  const initialHeight = canvasRect.height * 0.8;
+  const initialX = offsetX + (canvasRect.width - initialWidth) / 2;
+  const initialY = offsetY + (canvasRect.height - initialHeight) / 2;
+
+  cropArea = {
+    x: initialX,
+    y: initialY,
+    width: initialWidth,
+    height: initialHeight,
+    canvasOffsetX: offsetX,
+    canvasOffsetY: offsetY,
+    canvasWidth: canvasRect.width,
+    canvasHeight: canvasRect.height
+  };
+
+  updateCropArea();
+  initCropHandlers();
+}
+
+function updateCropArea() {
+  const cropAreaEl = document.getElementById('crop-area');
+  cropAreaEl.style.left = cropArea.x + 'px';
+  cropAreaEl.style.top = cropArea.y + 'px';
+  cropAreaEl.style.width = cropArea.width + 'px';
+  cropAreaEl.style.height = cropArea.height + 'px';
+}
+
+function initCropHandlers() {
+  const cropAreaEl = document.getElementById('crop-area');
+  const handles = document.querySelectorAll('.crop-handle');
+
+  // 裁剪区域拖动
+  cropAreaEl.addEventListener('mousedown', (e) => {
+    if (e.target === cropAreaEl) {
+      isDraggingCrop = true;
+      const wrapper = document.querySelector('.canvas-wrapper');
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const mouseX = e.clientX - wrapperRect.left;
+      const mouseY = e.clientY - wrapperRect.top;
+      cropStartX = mouseX - cropArea.x;
+      cropStartY = mouseY - cropArea.y;
+      e.stopPropagation();
+    }
+  });
+
+  // 调整大小手柄
+  handles.forEach(handle => {
+    handle.addEventListener('mousedown', (e) => {
+      isResizingCrop = true;
+      resizeHandle = handle.className.split(' ')[1].replace('crop-handle-', '');
+      cropStartX = e.clientX;
+      cropStartY = e.clientY;
+      e.stopPropagation();
+    });
+  });
+
+  // 全局鼠标移动
+  document.addEventListener('mousemove', handleCropMouseMove);
+  document.addEventListener('mouseup', handleCropMouseUp);
+}
+
+function handleCropMouseMove(e) {
+  if (!isCropping) return;
+
+  const wrapper = document.querySelector('.canvas-wrapper');
+  const wrapperRect = wrapper.getBoundingClientRect();
+
+  // 计算鼠标相对于wrapper的坐标
+  const mouseX = e.clientX - wrapperRect.left;
+  const mouseY = e.clientY - wrapperRect.top;
+
+  if (isDraggingCrop) {
+    let newX = mouseX - cropStartX;
+    let newY = mouseY - cropStartY;
+
+    // 限制在canvas范围内
+    newX = Math.max(cropArea.canvasOffsetX, Math.min(newX, cropArea.canvasOffsetX + cropArea.canvasWidth - cropArea.width));
+    newY = Math.max(cropArea.canvasOffsetY, Math.min(newY, cropArea.canvasOffsetY + cropArea.canvasHeight - cropArea.height));
+
+    cropArea.x = newX;
+    cropArea.y = newY;
+    updateCropArea();
+  } else if (isResizingCrop) {
+    const deltaX = e.clientX - cropStartX;
+    const deltaY = e.clientY - cropStartY;
+
+    const minSize = 50;
+    let newX = cropArea.x;
+    let newY = cropArea.y;
+    let newWidth = cropArea.width;
+    let newHeight = cropArea.height;
+
+    // 根据不同的手柄调整大小
+    if (resizeHandle.includes('n')) {
+      newY = cropArea.y + deltaY;
+      newHeight = cropArea.height - deltaY;
+    }
+    if (resizeHandle.includes('s')) {
+      newHeight = cropArea.height + deltaY;
+    }
+    if (resizeHandle.includes('w')) {
+      newX = cropArea.x + deltaX;
+      newWidth = cropArea.width - deltaX;
+    }
+    if (resizeHandle.includes('e')) {
+      newWidth = cropArea.width + deltaX;
+    }
+
+    // 限制最小尺寸和canvas边界
+    const maxRight = cropArea.canvasOffsetX + cropArea.canvasWidth;
+    const maxBottom = cropArea.canvasOffsetY + cropArea.canvasHeight;
+
+    if (newWidth >= minSize && newX >= cropArea.canvasOffsetX && newX + newWidth <= maxRight) {
+      cropArea.x = newX;
+      cropArea.width = newWidth;
+      cropStartX = e.clientX;
+    }
+    if (newHeight >= minSize && newY >= cropArea.canvasOffsetY && newY + newHeight <= maxBottom) {
+      cropArea.y = newY;
+      cropArea.height = newHeight;
+      cropStartY = e.clientY;
+    }
+
+    updateCropArea();
+  }
+}
+
+function handleCropMouseUp() {
+  isDraggingCrop = false;
+  isResizingCrop = false;
+  resizeHandle = null;
+}
+
+function exitCropMode() {
+  isCropping = false;
+  isDraggingCrop = false;
+  isResizingCrop = false;
+
+  const cropOverlay = document.getElementById('crop-overlay');
+  cropOverlay.style.display = 'none';
+
+  document.removeEventListener('mousemove', handleCropMouseMove);
+  document.removeEventListener('mouseup', handleCropMouseUp);
+}
+
+// 应用裁剪
+document.getElementById('apply-crop-btn').addEventListener('click', async () => {
+  if (!isCropping) return;
+
+  showLoading('正在裁剪画面...');
+
+  setTimeout(async () => {
+    try {
+      const canvas = document.getElementById('edit-canvas');
+      const canvasRect = canvas.getBoundingClientRect();
+
+      // 计算实际画布坐标（考虑缩放和canvas偏移）
+      const scaleX = canvas.width / canvasRect.width;
+      const scaleY = canvas.height / canvasRect.height;
+
+      // 裁剪区域相对于canvas的坐标
+      const relativeX = cropArea.x - cropArea.canvasOffsetX;
+      const relativeY = cropArea.y - cropArea.canvasOffsetY;
+
+      const actualX = Math.round(relativeX * scaleX);
+      const actualY = Math.round(relativeY * scaleY);
+      const actualWidth = Math.round(cropArea.width * scaleX);
+      const actualHeight = Math.round(cropArea.height * scaleY);
+
+      // 裁剪所有帧
+      for (let i = 0; i < frames.length; i++) {
+        await cropFrame(i, actualX, actualY, actualWidth, actualHeight);
+        if (i % 5 === 0 || i === frames.length - 1) {
+          document.getElementById('loading-progress').textContent = `${i + 1} / ${frames.length} 帧`;
+        }
+        if (i % 5 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 1));
+        }
+      }
+
+      // 更新canvas尺寸
+      editCanvas.width = actualWidth;
+      editCanvas.height = actualHeight;
+
+      // 清空frameImages缓存
+      frameImages = [];
+
+      exitCropMode();
+      hideLoading();
+      showFrame(currentFrame);
+      updateResolutionInfo();
+      estimateFileSize();
+      showNotification('裁剪完成', 'success');
+    } catch (error) {
+      console.error('Crop error:', error);
+      hideLoading();
+      showNotification('裁剪失败: ' + error.message, 'error');
+    }
+  }, 100);
+});
+
+async function cropFrame(frameIndex, x, y, width, height) {
+  const img = await getFrameImage(frameIndex);
+
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = width;
+  tempCanvas.height = height;
+  const tempCtx = tempCanvas.getContext('2d');
+
+  // 从原图中裁剪指定区域
+  tempCtx.drawImage(img, x, y, width, height, 0, 0, width, height);
+
+  frames[frameIndex] = tempCanvas.toDataURL('image/png');
+  frameImages[frameIndex] = null;
+}
+
+// 取消裁剪
+document.getElementById('cancel-crop-btn').addEventListener('click', () => {
+  exitCropMode();
+});
