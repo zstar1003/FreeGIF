@@ -345,6 +345,7 @@
             transition: none;
             min-width: 50px;
             min-height: 30px;
+            overflow: visible;
         }
 
         .text-layer.selected {
@@ -367,6 +368,69 @@
 
         .text-layer[contenteditable="true"] {
             cursor: text;
+        }
+
+        /* 文本图层旋转控制 */
+        .text-rotate-handle {
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            margin-left: -10px;
+            width: 20px;
+            height: 20px;
+            background: #667eea;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: grab;
+            display: none;
+            z-index: 1000;
+            pointer-events: auto;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .text-rotate-handle:active {
+            cursor: grabbing;
+        }
+
+        .text-rotate-handle::after {
+            content: '↻';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .text-layer.selected .text-rotate-handle {
+            display: block;
+        }
+
+        .text-layer.editing .text-rotate-handle {
+            display: none;
+        }
+
+        .text-rotate-line {
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            margin-left: -1px;
+            width: 2px;
+            height: 30px;
+            background: #667eea;
+            display: none;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .text-layer.selected .text-rotate-line {
+            display: block;
+        }
+
+        .text-layer.editing .text-rotate-line {
+            display: none;
         }
 
         /* 裁剪覆盖层 */

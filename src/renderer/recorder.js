@@ -29,8 +29,11 @@ let isLooping = true; // 是否循环播放
 let textLayers = []; // 文本图层数组
 let selectedTextLayer = null; // 当前选中的文本图层
 let isDraggingText = false;
+let isRotatingText = false;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
+let rotationStartAngle = 0;
+let rotationStartRotation = 0;
 
 // 裁剪系统
 let isCropping = false;
@@ -973,13 +976,8 @@ document.getElementById('add-text-btn').addEventListener('click', () => {
   renderTextLayer(textLayer);
   selectTextLayer(textLayer);
 
-  // 延迟后自动进入编辑模式
-  setTimeout(() => {
-    const textDiv = document.querySelector(`.text-layer[data-layer-id="${textLayer.id}"]`);
-    if (textDiv) {
-      enterEditMode(textDiv, textLayer);
-    }
-  }, 100);
+  // 不自动进入编辑模式，让用户看到旋转手柄
+  // 用户可以双击进入编辑模式
 });
 
 // 渲染文本图层到DOM
@@ -1013,6 +1011,21 @@ function renderTextLayer(layer) {
     textDiv.style.webkitTextStroke = `${layer.strokeWidth}px ${layer.strokeColor}`;
     textDiv.style.paintOrder = 'stroke fill';
   }
+
+  // 创建旋转控制线和手柄
+  const rotateLine = document.createElement('div');
+  rotateLine.className = 'text-rotate-line';
+  textDiv.appendChild(rotateLine);
+
+  const rotateHandle = document.createElement('div');
+  rotateHandle.className = 'text-rotate-handle';
+  textDiv.appendChild(rotateHandle);
+
+  // 旋转控制事件
+  rotateHandle.addEventListener('mousedown', (e) => {
+    e.stopPropagation();
+    handleRotateMouseDown(e, layer, textDiv);
+  });
 
   // 添加事件监听
   textDiv.addEventListener('mousedown', (e) => handleTextMouseDown(e, layer));
@@ -1205,6 +1218,22 @@ function handleTextMouseDown(e, layer) {
   selectTextLayer(layer);
 }
 
+// 旋转控制
+function handleRotateMouseDown(e, layer, textDiv) {
+  e.stopPropagation();
+  isRotatingText = true;
+  selectedTextLayer = layer;
+
+  const container = document.getElementById('text-overlay-container').querySelector('div');
+  const rect = container.getBoundingClientRect();
+
+  // 计算初始角度
+  const centerX = rect.left + layer.x;
+  const centerY = rect.top + layer.y;
+  rotationStartAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
+  rotationStartRotation = layer.rotation;
+}
+
 document.addEventListener('mousemove', (e) => {
   if (isDraggingText && selectedTextLayer) {
     const container = document.getElementById('text-overlay-container').querySelector('div');
@@ -1222,10 +1251,34 @@ document.addEventListener('mousemove', (e) => {
       textDiv.style.top = `${y}px`;
     }
   }
+
+  if (isRotatingText && selectedTextLayer) {
+    const container = document.getElementById('text-overlay-container').querySelector('div');
+    const rect = container.getBoundingClientRect();
+
+    // 计算鼠标相对于文本中心的角度
+    const centerX = rect.left + selectedTextLayer.x;
+    const centerY = rect.top + selectedTextLayer.y;
+    const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
+
+    // 计算新的旋转角度
+    const deltaAngle = angle - rotationStartAngle;
+    let newRotation = rotationStartRotation + deltaAngle;
+
+    // 标准化角度到 0-360
+    newRotation = ((newRotation % 360) + 360) % 360;
+
+    selectedTextLayer.rotation = Math.round(newRotation);
+
+    // 更新DOM和工具栏
+    updateTextLayerDOM(selectedTextLayer);
+    document.getElementById('text-rotation-toolbar').value = selectedTextLayer.rotation;
+  }
 });
 
 document.addEventListener('mouseup', () => {
   isDraggingText = false;
+  isRotatingText = false;
 });
 
 // 删除文本按钮(工具栏)
