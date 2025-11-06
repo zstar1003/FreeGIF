@@ -952,7 +952,7 @@ document.getElementById('add-text-btn').addEventListener('click', () => {
     x: editCanvas.width / 2,
     y: editCanvas.height / 2,
     fontSize: 32,
-    fontFamily: 'Arial',
+    fontFamily: 'Arial, Helvetica, sans-serif',
     color: '#ffffff',
     strokeColor: '#000000',
     strokeWidth: 2,
@@ -993,6 +993,7 @@ function renderTextLayer(layer) {
   textDiv.style.left = `${layer.x}px`;
   textDiv.style.top = `${layer.y}px`;
   textDiv.style.fontSize = `${layer.fontSize}px`;
+  // 直接使用完整的字体栈（已包含fallback）
   textDiv.style.fontFamily = layer.fontFamily;
   textDiv.style.color = layer.color;
   textDiv.style.transform = `translate(-50%, -50%) rotate(${layer.rotation}deg)`;
@@ -1161,6 +1162,7 @@ function updateTextLayerDOM(layer) {
   const textDiv = document.querySelector(`.text-layer[data-layer-id="${layer.id}"]`);
   if (textDiv) {
     textDiv.style.fontSize = `${layer.fontSize}px`;
+    // 直接使用完整的字体栈（已包含fallback）
     textDiv.style.fontFamily = layer.fontFamily;
     textDiv.style.color = layer.color;
     textDiv.style.transform = `translate(-50%, -50%) rotate(${layer.rotation}deg)`;
@@ -1283,6 +1285,7 @@ async function applyTextLayersToFrame(frameIndex) {
     tempCtx.translate(layer.x, layer.y);
     tempCtx.rotate((layer.rotation * Math.PI) / 180);
 
+    // Canvas API 直接使用完整的字体栈
     tempCtx.font = `${layer.fontSize}px ${layer.fontFamily}`;
     tempCtx.textAlign = 'center';
     tempCtx.textBaseline = 'middle';
