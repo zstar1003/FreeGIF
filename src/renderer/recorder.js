@@ -1051,6 +1051,11 @@ function enterEditMode(textDiv, layer) {
   }
 
   isDraggingText = false;
+
+  // 先获取旋转手柄的引用
+  const rotateHandle = textDiv.querySelector('.text-rotate-handle');
+  const rotateLine = textDiv.querySelector('.text-rotate-line');
+
   textDiv.contentEditable = true;
   textDiv.classList.add('editing');
   textDiv.focus();
@@ -1067,8 +1072,24 @@ function enterEditMode(textDiv, layer) {
     textDiv.contentEditable = false;
     textDiv.classList.remove('editing');
     layer.text = textDiv.textContent.trim() || '空文本';
+
+    // 清空textDiv内容，只保留文本
     textDiv.textContent = layer.text;
+
+    // 重新添加旋转控制元素
+    if (rotateLine && !textDiv.contains(rotateLine)) {
+      textDiv.appendChild(rotateLine);
+    }
+    if (rotateHandle && !textDiv.contains(rotateHandle)) {
+      textDiv.appendChild(rotateHandle);
+    }
+
     textDiv.removeEventListener('blur', exitEdit);
+
+    // 重新选中文本图层以显示旋转手柄
+    setTimeout(() => {
+      selectTextLayer(layer);
+    }, 0);
   };
 
   textDiv.addEventListener('blur', exitEdit);
