@@ -173,7 +173,77 @@
             display: flex;
             gap: 10px;
         }
-        
+
+        #text-toolbar {
+            background: #2c2c2c;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border-bottom: 1px solid #3c3c3c;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toolbar-section label {
+            font-size: 12px;
+            color: #aaa;
+            white-space: nowrap;
+        }
+
+        .toolbar-section select,
+        .toolbar-section input[type="number"] {
+            background: #1e1e1e;
+            border: 1px solid #444;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            min-width: 80px;
+        }
+
+        .toolbar-section input[type="color"] {
+            width: 40px;
+            height: 32px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #1e1e1e;
+        }
+
+        .toolbar-btn {
+            padding: 6px 16px;
+            border-radius: 4px;
+            border: none;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .toolbar-btn.delete {
+            background: #ff4444;
+            color: white;
+        }
+
+        .toolbar-btn.delete:hover {
+            background: #ff6666;
+        }
+
+        .toolbar-btn.apply {
+            background: #667eea;
+            color: white;
+        }
+
+        .toolbar-btn.apply:hover {
+            background: #5568d3;
+        }
+
         .editor-content {
             flex: 1;
             display: flex;
@@ -238,14 +308,67 @@
             align-items: center;
             margin-bottom: 15px;
             overflow: hidden;
+            position: relative;
         }
-        
+
         #edit-canvas {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
         }
-        
+
+        #text-overlay-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #text-overlay-container>div {
+            position: relative;
+            pointer-events: auto;
+        }
+
+        .text-layer {
+            position: absolute;
+            cursor: move;
+            user-select: none;
+            padding: 5px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            transform-origin: center center;
+            transition: none;
+            min-width: 50px;
+            min-height: 30px;
+        }
+
+        .text-layer.selected {
+            outline: 2px dashed #667eea;
+            outline-offset: 2px;
+        }
+
+        .text-layer:hover {
+            outline: 2px dashed rgba(102, 126, 234, 0.5);
+            outline-offset: 2px;
+        }
+
+        .text-layer.editing {
+            cursor: text;
+            user-select: text;
+            outline: 2px solid #667eea;
+            outline-offset: 2px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .text-layer[contenteditable="true"] {
+            cursor: text;
+        }
+
         .playback-bar {
             background: #2c2c2c;
             padding: 15px;
@@ -802,6 +925,296 @@
         .about-btn:hover {
             background: #5568d3;
         }
+        /* 文本编辑弹窗 */
+
+        #text-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100002;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        #text-modal.active {
+            display: flex;
+        }
+
+        .text-modal-content {
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 25px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.3s ease-out;
+            border: 1px solid #3c3c3c;
+        }
+
+        .text-modal-title {
+            font-size: 22px;
+            color: #667eea;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .text-modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .text-form-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .text-form-row>label {
+            width: 100%;
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .text-form-row textarea,
+        .text-form-row select,
+        .text-form-row input[type="number"] {
+            width: 100%;
+            background: #2c2c2c;
+            border: 1px solid #444;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .text-form-row textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .text-form-row textarea:focus,
+        .text-form-row select:focus,
+        .text-form-row input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .text-form-col {
+            flex: 1;
+            min-width: 150px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .text-form-col label {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        .text-form-col label span {
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .text-form-col select,
+        .text-form-col input[type="number"] {
+            background: #2c2c2c;
+            border: 1px solid #444;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .text-form-col input[type="range"] {
+            width: 100%;
+            margin-top: 2px;
+        }
+
+        .text-form-col input[type="color"] {
+            width: 100%;
+            height: 40px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #2c2c2c;
+        }
+
+        .text-modal-footer {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .text-modal-btn {
+            padding: 10px 30px;
+            border-radius: 5px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .text-modal-btn.cancel {
+            background: #555;
+            color: white;
+        }
+
+        .text-modal-btn.cancel:hover {
+            background: #666;
+        }
+
+        .text-modal-btn.apply {
+            background: #667eea;
+            color: white;
+        }
+
+        .text-modal-btn.apply:hover {
+            background: #5568d3;
+        }
+        /* 文本属性面板 */
+
+        #text-properties-panel {
+            position: fixed;
+            right: 20px;
+            top: 80px;
+            width: 280px;
+            background: #1e1e1e;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+            border: 1px solid #3c3c3c;
+            z-index: 10000;
+        }
+
+        .properties-header {
+            padding: 15px;
+            border-bottom: 1px solid #3c3c3c;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        .properties-close {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .properties-close:hover {
+            color: #fff;
+        }
+
+        .properties-body {
+            padding: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .property-group {
+            margin-bottom: 15px;
+        }
+
+        .property-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .property-group label {
+            display: block;
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        .property-group label span {
+            color: #667eea;
+            font-weight: 500;
+            float: right;
+        }
+
+        .property-group select,
+        .property-group input[type="number"] {
+            width: 100%;
+            background: #2c2c2c;
+            border: 1px solid #444;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .property-group input[type="range"] {
+            width: 100%;
+        }
+
+        .property-group input[type="color"] {
+            width: 100%;
+            height: 40px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #2c2c2c;
+        }
+
+        .property-actions {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .property-btn {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .property-btn.delete {
+            background: #ff4444;
+            color: white;
+        }
+
+        .property-btn.delete:hover {
+            background: #ff6666;
+        }
+
+        .property-btn.apply {
+            background: #667eea;
+            color: white;
+        }
+
+        .property-btn.apply:hover {
+            background: #5568d3;
+        }
     </style>
 </head>
 
@@ -841,11 +1254,55 @@
                 <button class="control-btn" id="import-gif-btn">
           📁 导入 GIF
         </button>
+                <button class="control-btn" id="add-text-btn" style="display: none;">
+          ✏️ 添加文本
+        </button>
             </div>
             <div class="header-right">
                 <button class="control-btn" id="about-btn">
           关于软件
         </button>
+            </div>
+        </div>
+
+        <!-- 文本属性工具栏 -->
+        <div id="text-toolbar" style="display: none;">
+            <div class="toolbar-section">
+                <label>字体</label>
+                <select id="text-font-toolbar">
+                    <option value="Arial">Arial</option>
+                    <option value="Helvetica">Helvetica</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Courier New">Courier New</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Comic Sans MS">Comic Sans MS</option>
+                    <option value="Impact">Impact</option>
+                </select>
+            </div>
+            <div class="toolbar-section">
+                <label>大小</label>
+                <input type="number" id="text-size-toolbar" min="12" max="120" value="32">
+            </div>
+            <div class="toolbar-section">
+                <label>颜色</label>
+                <input type="color" id="text-color-toolbar" value="#ffffff">
+            </div>
+            <div class="toolbar-section">
+                <label>描边</label>
+                <input type="color" id="text-stroke-color-toolbar" value="#000000">
+            </div>
+            <div class="toolbar-section">
+                <label>描边宽度</label>
+                <input type="number" id="text-stroke-width-toolbar" min="0" max="10" value="2">
+            </div>
+            <div class="toolbar-section">
+                <label>旋转</label>
+                <input type="number" id="text-rotation-toolbar" min="0" max="360" value="0">
+            </div>
+            <div class="toolbar-section">
+                <button class="toolbar-btn delete" id="delete-text-toolbar-btn">删除</button>
+                <button class="toolbar-btn apply" id="apply-text-toolbar-btn">应用到所有帧</button>
             </div>
         </div>
 
@@ -862,6 +1319,7 @@
                 <div class="preview-panel">
                     <div class="canvas-wrapper">
                         <canvas id="edit-canvas"></canvas>
+                        <div id="text-overlay-container"></div>
                     </div>
 
                     <div class="playback-bar">
@@ -1020,6 +1478,70 @@
                     </div>
                 </div>
                 <button class="about-btn" id="about-close-btn">关闭</button>
+            </div>
+        </div>
+
+        <!-- 文本编辑弹窗 -->
+        <div id="text-modal">
+            <div class="text-modal-content">
+                <h2 class="text-modal-title">添加文本</h2>
+                <div class="text-modal-body">
+                    <div class="text-form-row">
+                        <label>输入文本内容</label>
+                        <textarea id="text-content" placeholder="输入文本内容" rows="4" autofocus></textarea>
+                    </div>
+                </div>
+                <div class="text-modal-footer">
+                    <button class="text-modal-btn cancel" id="text-cancel-btn">取消</button>
+                    <button class="text-modal-btn apply" id="text-confirm-btn">添加</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文本属性面板 -->
+        <div id="text-properties-panel" style="display: none;">
+            <div class="properties-header">
+                <span>文本属性</span>
+                <button class="properties-close" id="close-properties-btn">✕</button>
+            </div>
+            <div class="properties-body">
+                <div class="property-group">
+                    <label>字体</label>
+                    <select id="text-font-prop">
+                        <option value="Arial">Arial</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Courier New">Courier New</option>
+                        <option value="Verdana">Verdana</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Comic Sans MS">Comic Sans MS</option>
+                        <option value="Impact">Impact</option>
+                    </select>
+                </div>
+                <div class="property-group">
+                    <label>大小 <span id="text-size-prop-label">32px</span></label>
+                    <input type="range" id="text-size-prop" min="12" max="120" value="32">
+                </div>
+                <div class="property-group">
+                    <label>颜色</label>
+                    <input type="color" id="text-color-prop" value="#ffffff">
+                </div>
+                <div class="property-group">
+                    <label>描边颜色</label>
+                    <input type="color" id="text-stroke-color-prop" value="#000000">
+                </div>
+                <div class="property-group">
+                    <label>描边宽度 <span id="text-stroke-prop-label">2px</span></label>
+                    <input type="range" id="text-stroke-width-prop" min="0" max="10" value="2">
+                </div>
+                <div class="property-group">
+                    <label>旋转 <span id="text-rotation-prop-label">0°</span></label>
+                    <input type="range" id="text-rotation-prop" min="0" max="360" value="0">
+                </div>
+                <div class="property-actions">
+                    <button class="property-btn delete" id="delete-text-btn">删除文本</button>
+                    <button class="property-btn apply" id="apply-text-to-all-btn">应用到所有帧</button>
+                </div>
             </div>
         </div>
 

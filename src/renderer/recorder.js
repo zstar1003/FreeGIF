@@ -25,6 +25,13 @@ let recordingFPS = 10; // 默认录制帧率
 let playbackSpeed = 1; // 播放速度倍率
 let isLooping = true; // 是否循环播放
 
+// 文本图层系统
+let textLayers = []; // 文本图层数组
+let selectedTextLayer = null; // 当前选中的文本图层
+let isDraggingText = false;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
 // 获取元素
 const recorderMode = document.getElementById('recorder-mode');
 const editorMode = document.getElementById('editor-mode');
@@ -52,6 +59,7 @@ function hideEmptyState() {
   emptyState.classList.add('hidden');
   editorWorkspace.classList.add('active');
   document.getElementById('export-btn').style.display = 'inline-block';
+  document.getElementById('add-text-btn').style.display = 'inline-block';
 }
 
 // ========== 开始录制按钮 ==========
@@ -930,6 +938,377 @@ document.getElementById('apply-trim-btn').addEventListener('click', () => {
 
   initializeEditor();
 });
+
+// ========== 文本图层功能 ==========
+
+let textIdCounter = 0;
+
+// 点击添加文本按钮 - 直接创建文本图层
+document.getElementById('add-text-btn').addEventListener('click', () => {
+  // 创建默认文本图层
+  const textLayer = {
+    id: textIdCounter++,
+    text: '双击编辑文本',
+    x: editCanvas.width / 2,
+    y: editCanvas.height / 2,
+    fontSize: 32,
+    fontFamily: 'Arial',
+    color: '#ffffff',
+    strokeColor: '#000000',
+    strokeWidth: 2,
+    rotation: 0
+  };
+
+  textLayers.push(textLayer);
+  renderTextLayer(textLayer);
+  selectTextLayer(textLayer);
+
+  // 延迟后自动进入编辑模式
+  setTimeout(() => {
+    const textDiv = document.querySelector(`.text-layer[data-layer-id="${textLayer.id}"]`);
+    if (textDiv) {
+      enterEditMode(textDiv, textLayer);
+    }
+  }, 100);
+});
+
+// 渲染文本图层到DOM
+function renderTextLayer(layer) {
+  const container = document.getElementById('text-overlay-container');
+
+  // 创建canvas容器的内部容器(用于保持画布的宽高比)
+  let canvasContainer = container.querySelector('div');
+  if (!canvasContainer) {
+    canvasContainer = document.createElement('div');
+    container.appendChild(canvasContainer);
+
+    // 设置容器大小匹配画布
+    updateTextContainerSize();
+  }
+
+  const textDiv = document.createElement('div');
+  textDiv.className = 'text-layer';
+  textDiv.dataset.layerId = layer.id;
+  textDiv.textContent = layer.text;
+  textDiv.style.left = `${layer.x}px`;
+  textDiv.style.top = `${layer.y}px`;
+  textDiv.style.fontSize = `${layer.fontSize}px`;
+  textDiv.style.fontFamily = layer.fontFamily;
+  textDiv.style.color = layer.color;
+  textDiv.style.transform = `translate(-50%, -50%) rotate(${layer.rotation}deg)`;
+
+  // 应用描边
+  if (layer.strokeWidth > 0) {
+    textDiv.style.webkitTextStroke = `${layer.strokeWidth}px ${layer.strokeColor}`;
+    textDiv.style.paintOrder = 'stroke fill';
+  }
+
+  // 添加事件监听
+  textDiv.addEventListener('mousedown', (e) => handleTextMouseDown(e, layer));
+  textDiv.addEventListener('click', (e) => {
+    e.stopPropagation();
+    selectTextLayer(layer);
+  });
+
+  // 双击进入编辑模式
+  textDiv.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
+    enterEditMode(textDiv, layer);
+  });
+
+  canvasContainer.appendChild(textDiv);
+}
+
+// 进入编辑模式
+function enterEditMode(textDiv, layer) {
+  // 如果已经在编辑,直接返回
+  if (textDiv.getAttribute('contenteditable') === 'true') {
+    return;
+  }
+
+  isDraggingText = false;
+  textDiv.contentEditable = true;
+  textDiv.classList.add('editing');
+  textDiv.focus();
+
+  // 选中所有文本
+  const range = document.createRange();
+  range.selectNodeContents(textDiv);
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  // 失去焦点时退出编辑模式
+  const exitEdit = () => {
+    textDiv.contentEditable = false;
+    textDiv.classList.remove('editing');
+    layer.text = textDiv.textContent.trim() || '空文本';
+    textDiv.textContent = layer.text;
+    textDiv.removeEventListener('blur', exitEdit);
+  };
+
+  textDiv.addEventListener('blur', exitEdit);
+
+  // 按Enter键退出编辑
+  textDiv.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      textDiv.blur();
+    }
+  });
+}
+
+// 更新文本容器大小以匹配画布
+function updateTextContainerSize() {
+  const canvas = document.getElementById('edit-canvas');
+  const container = document.getElementById('text-overlay-container');
+  const canvasContainer = container.querySelector('div');
+
+  if (canvasContainer && canvas) {
+    const rect = canvas.getBoundingClientRect();
+    canvasContainer.style.width = `${canvas.clientWidth}px`;
+    canvasContainer.style.height = `${canvas.clientHeight}px`;
+  }
+}
+
+// 选择文本图层
+function selectTextLayer(layer) {
+  selectedTextLayer = layer;
+
+  // 更新所有文本图层的选中状态
+  document.querySelectorAll('.text-layer').forEach(div => {
+    if (parseInt(div.dataset.layerId) === layer.id) {
+      div.classList.add('selected');
+    } else {
+      div.classList.remove('selected');
+    }
+  });
+
+  // 显示工具栏并填充数据
+  showToolbar(layer);
+}
+
+// 显示工具栏
+function showToolbar(layer) {
+  const toolbar = document.getElementById('text-toolbar');
+  toolbar.style.display = 'flex';
+
+  // 填充属性值
+  document.getElementById('text-font-toolbar').value = layer.fontFamily;
+  document.getElementById('text-size-toolbar').value = layer.fontSize;
+  document.getElementById('text-color-toolbar').value = layer.color;
+  document.getElementById('text-stroke-color-toolbar').value = layer.strokeColor;
+  document.getElementById('text-stroke-width-toolbar').value = layer.strokeWidth;
+  document.getElementById('text-rotation-toolbar').value = layer.rotation;
+}
+
+// 隐藏工具栏
+function hideToolbar() {
+  document.getElementById('text-toolbar').style.display = 'none';
+  selectedTextLayer = null;
+
+  // 取消所有选中状态
+  document.querySelectorAll('.text-layer').forEach(div => {
+    div.classList.remove('selected');
+  });
+}
+
+// 工具栏控件事件
+document.getElementById('text-font-toolbar').addEventListener('change', (e) => {
+  if (selectedTextLayer) {
+    selectedTextLayer.fontFamily = e.target.value;
+    updateTextLayerDOM(selectedTextLayer);
+  }
+});
+
+document.getElementById('text-size-toolbar').addEventListener('input', (e) => {
+  if (selectedTextLayer) {
+    selectedTextLayer.fontSize = parseInt(e.target.value);
+    updateTextLayerDOM(selectedTextLayer);
+  }
+});
+
+document.getElementById('text-color-toolbar').addEventListener('input', (e) => {
+  if (selectedTextLayer) {
+    selectedTextLayer.color = e.target.value;
+    updateTextLayerDOM(selectedTextLayer);
+  }
+});
+
+document.getElementById('text-stroke-color-toolbar').addEventListener('input', (e) => {
+  if (selectedTextLayer) {
+    selectedTextLayer.strokeColor = e.target.value;
+    updateTextLayerDOM(selectedTextLayer);
+  }
+});
+
+document.getElementById('text-stroke-width-toolbar').addEventListener('input', (e) => {
+  if (selectedTextLayer) {
+    selectedTextLayer.strokeWidth = parseInt(e.target.value);
+    updateTextLayerDOM(selectedTextLayer);
+  }
+});
+
+document.getElementById('text-rotation-toolbar').addEventListener('input', (e) => {
+  if (selectedTextLayer) {
+    selectedTextLayer.rotation = parseInt(e.target.value);
+    updateTextLayerDOM(selectedTextLayer);
+  }
+});
+
+// 更新文本图层DOM
+function updateTextLayerDOM(layer) {
+  const textDiv = document.querySelector(`.text-layer[data-layer-id="${layer.id}"]`);
+  if (textDiv) {
+    textDiv.style.fontSize = `${layer.fontSize}px`;
+    textDiv.style.fontFamily = layer.fontFamily;
+    textDiv.style.color = layer.color;
+    textDiv.style.transform = `translate(-50%, -50%) rotate(${layer.rotation}deg)`;
+
+    if (layer.strokeWidth > 0) {
+      textDiv.style.webkitTextStroke = `${layer.strokeWidth}px ${layer.strokeColor}`;
+      textDiv.style.paintOrder = 'stroke fill';
+    } else {
+      textDiv.style.webkitTextStroke = '';
+    }
+  }
+}
+
+// 文本拖动
+function handleTextMouseDown(e, layer) {
+  // 如果在编辑模式,不允许拖动
+  const textDiv = e.currentTarget;
+  if (textDiv.getAttribute('contenteditable') === 'true') {
+    return;
+  }
+
+  e.stopPropagation();
+  isDraggingText = true;
+  selectedTextLayer = layer;
+
+  const rect = textDiv.getBoundingClientRect();
+  dragOffsetX = e.clientX - rect.left - rect.width / 2;
+  dragOffsetY = e.clientY - rect.top - rect.height / 2;
+
+  selectTextLayer(layer);
+}
+
+document.addEventListener('mousemove', (e) => {
+  if (isDraggingText && selectedTextLayer) {
+    const container = document.getElementById('text-overlay-container').querySelector('div');
+    const rect = container.getBoundingClientRect();
+
+    const x = e.clientX - rect.left - dragOffsetX;
+    const y = e.clientY - rect.top - dragOffsetY;
+
+    selectedTextLayer.x = x;
+    selectedTextLayer.y = y;
+
+    const textDiv = document.querySelector(`.text-layer[data-layer-id="${selectedTextLayer.id}"]`);
+    if (textDiv) {
+      textDiv.style.left = `${x}px`;
+      textDiv.style.top = `${y}px`;
+    }
+  }
+});
+
+document.addEventListener('mouseup', () => {
+  isDraggingText = false;
+});
+
+// 删除文本按钮(工具栏)
+document.getElementById('delete-text-toolbar-btn').addEventListener('click', () => {
+  if (selectedTextLayer) {
+    // 从数组中删除
+    textLayers = textLayers.filter(layer => layer.id !== selectedTextLayer.id);
+
+    // 从DOM中删除
+    const textDiv = document.querySelector(`.text-layer[data-layer-id="${selectedTextLayer.id}"]`);
+    if (textDiv) {
+      textDiv.remove();
+    }
+
+    hideToolbar();
+    showNotification('文本已删除', 'success');
+  }
+});
+
+// 应用文本到所有帧(工具栏)
+document.getElementById('apply-text-toolbar-btn').addEventListener('click', async () => {
+  if (textLayers.length === 0) {
+    showNotification('没有文本图层', 'error');
+    return;
+  }
+
+  stopPlayback();
+  showLoading('正在应用文本到所有帧...');
+
+  setTimeout(async () => {
+    for (let i = 0; i < frames.length; i++) {
+      await applyTextLayersToFrame(i);
+      if (i % 5 === 0 || i === frames.length - 1) {
+        document.getElementById('loading-progress').textContent = `${i + 1} / ${frames.length} 帧`;
+      }
+      if (i % 5 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 1));
+      }
+    }
+
+    // 清空文本图层
+    textLayers = [];
+    document.querySelectorAll('.text-layer').forEach(div => div.remove());
+    hideToolbar();
+
+    hideLoading();
+    showFrame(currentFrame);
+    showNotification('文本已应用到所有帧', 'success');
+  }, 100);
+});
+
+// 应用所有文本图层到指定帧
+async function applyTextLayersToFrame(frameIndex) {
+  const img = await getFrameImage(frameIndex);
+
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = editCanvas.width;
+  tempCanvas.height = editCanvas.height;
+  const tempCtx = tempCanvas.getContext('2d');
+
+  // 绘制原始图像
+  tempCtx.drawImage(img, 0, 0, editCanvas.width, editCanvas.height);
+
+  // 绘制所有文本图层
+  textLayers.forEach(layer => {
+    tempCtx.save();
+    tempCtx.translate(layer.x, layer.y);
+    tempCtx.rotate((layer.rotation * Math.PI) / 180);
+
+    tempCtx.font = `${layer.fontSize}px ${layer.fontFamily}`;
+    tempCtx.textAlign = 'center';
+    tempCtx.textBaseline = 'middle';
+
+    if (layer.strokeWidth > 0) {
+      tempCtx.strokeStyle = layer.strokeColor;
+      tempCtx.lineWidth = layer.strokeWidth;
+      tempCtx.strokeText(layer.text, 0, 0);
+    }
+
+    tempCtx.fillStyle = layer.color;
+    tempCtx.fillText(layer.text, 0, 0);
+
+    tempCtx.restore();
+  });
+
+  frames[frameIndex] = tempCanvas.toDataURL('image/png');
+  frameImages[frameIndex] = null;
+}
+
+// 清空文本图层
+function clearTextLayers() {
+  textLayers = [];
+  document.querySelectorAll('.text-layer').forEach(div => div.remove());
+  hideToolbar();
+}
 
 // 质量预设配置
 const qualityPresets = {
