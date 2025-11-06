@@ -13,7 +13,6 @@ let stream;
 let recordingBounds;
 let recordingStartTime;
 let timerInterval;
-let isWindowTopmost = false; // 窗口置顶状态
 
 // 编辑相关变量
 let currentFrame = 0;
@@ -59,22 +58,6 @@ function hideEmptyState() {
 
 document.getElementById('start-record-btn').addEventListener('click', () => {
   ipcRenderer.send('start-selection');
-});
-
-// ========== 置顶按钮 ==========
-
-document.getElementById('toggle-topmost-btn').addEventListener('click', () => {
-  isWindowTopmost = !isWindowTopmost;
-  ipcRenderer.send('toggle-topmost', isWindowTopmost);
-
-  const btn = document.getElementById('toggle-topmost-btn');
-  if (isWindowTopmost) {
-    btn.classList.add('active');
-    btn.textContent = '📌 已置顶';
-  } else {
-    btn.classList.remove('active');
-    btn.textContent = '📌 置顶';
-  }
 });
 
 // ========== 导入 GIF 按钮 ==========
@@ -267,9 +250,8 @@ async function setupPreviewMode(bounds) {
     // 设置预览
     setupRecordingPreview(stream, bounds);
 
-    // 显示帧率选择、置顶、重新截取和开始录制按钮，隐藏停止按钮
+    // 显示帧率选择、重新截取和开始录制按钮，隐藏停止按钮
     document.getElementById('fps-control').style.display = 'flex';
-    document.getElementById('toggle-topmost-btn').style.display = 'inline-block';
     document.getElementById('reselect-btn').style.display = 'inline-block';
     document.getElementById('start-recording-btn').style.display = 'inline-block';
     document.getElementById('stop-btn').style.display = 'none';
@@ -289,9 +271,8 @@ async function startRecording(bounds) {
     recordingFPS = parseInt(document.getElementById('fps-select').value);
     console.log('录制帧率设置为:', recordingFPS, 'FPS');
 
-    // 隐藏帧率选择、置顶、重新截取和开始按钮，显示停止按钮和计时器
+    // 隐藏帧率选择、重新截取和开始按钮，显示停止按钮和计时器
     document.getElementById('fps-control').style.display = 'none';
-    document.getElementById('toggle-topmost-btn').style.display = 'none';
     document.getElementById('reselect-btn').style.display = 'none';
     document.getElementById('start-recording-btn').style.display = 'none';
     document.getElementById('stop-btn').style.display = 'inline-block';

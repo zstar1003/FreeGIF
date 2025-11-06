@@ -197,10 +197,3 @@ ipcMain.handle('show-save-dialog', async(event, options) => {
 ipcMain.handle('show-open-dialog', async(event, options) => {
     return await dialog.showOpenDialog(options);
 });
-
-// 处理窗口置顶切换
-ipcMain.on('toggle-topmost', (event, isTopmost) => {
-    if (recorderWindow) {
-        recorderWindow.setAlwaysOnTop(isTopmost);
-    }
-});
