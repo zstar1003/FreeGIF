@@ -88,9 +88,16 @@ function createSelectorWindow() {
 }
 
 function createRecorderWindow(bounds) {
+    // 获取屏幕尺寸，确保窗口不会太大
+    const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+
+    // 使用屏幕工作区域的尺寸，确保按钮可见
+    const windowWidth = Math.min(1400, screenWidth * 0.9);
+    const windowHeight = Math.min(980, screenHeight * 0.9);
+
     recorderWindow = new BrowserWindow({
-        width: 1400,
-        height: 980,
+        width: windowWidth,
+        height: windowHeight,
         autoHideMenuBar: true, // 隐藏菜单栏
         icon: iconPath, // 设置窗口图标
         webPreferences: {
@@ -189,4 +196,11 @@ ipcMain.handle('show-save-dialog', async(event, options) => {
 
 ipcMain.handle('show-open-dialog', async(event, options) => {
     return await dialog.showOpenDialog(options);
+});
+
+// 处理窗口置顶切换
+ipcMain.on('toggle-topmost', (event, isTopmost) => {
+    if (recorderWindow) {
+        recorderWindow.setAlwaysOnTop(isTopmost);
+    }
 });

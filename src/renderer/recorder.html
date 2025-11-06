@@ -38,14 +38,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            min-height: 0;
+            overflow: hidden;
         }
-        
+
         #preview-canvas {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
         }
-        
+
         #recorder-controls {
             background: rgba(0, 0, 0, 0.9);
             padding: 15px;
@@ -53,6 +55,8 @@
             align-items: center;
             justify-content: center;
             gap: 15px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
         }
         
         #recording-indicator {
@@ -104,7 +108,16 @@
         .control-btn.primary:hover {
             background: #5568d3;
         }
-        
+
+        .control-btn.active {
+            background: #667eea;
+            border: 2px solid #5568d3;
+        }
+
+        .control-btn.active:hover {
+            background: #5568d3;
+        }
+
         #timer {
             font-family: monospace;
             font-size: 18px;
@@ -808,8 +821,8 @@
             <canvas id="preview-canvas"></canvas>
         </div>
         <div id="recorder-controls">
-            <div id="recording-indicator"></div>
-            <span id="timer">00:00</span>
+            <div id="recording-indicator" style="display: none;"></div>
+            <span id="timer" style="display: none;">00:00</span>
             <div class="fps-control" id="fps-control" style="display: none;">
                 <label>帧率:</label>
                 <select id="fps-select">
@@ -821,9 +834,10 @@
           <option value="30">30 FPS</option>
         </select>
             </div>
+            <button class="control-btn" id="toggle-topmost-btn" title="切换窗口置顶" style="display: none;">📌 置顶</button>
             <button class="control-btn" id="reselect-btn" style="display: none;">重新截取</button>
             <button class="control-btn primary" id="start-recording-btn" style="display: none;">开始录制</button>
-            <button class="control-btn danger" id="stop-btn">停止录制</button>
+            <button class="control-btn danger" id="stop-btn" style="display: none;">停止录制</button>
         </div>
     </div>
 
