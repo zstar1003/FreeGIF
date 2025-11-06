@@ -1491,6 +1491,30 @@ document.getElementById('export-btn').addEventListener('click', async () => {
   document.getElementById('loading-progress').textContent = '准备导出...';
 
   try {
+    // 如果有未应用的文本图层，先应用到所有帧
+    if (textLayers.length > 0) {
+      document.getElementById('loading-progress').textContent = '正在应用文本...';
+
+      for (let i = 0; i < frames.length; i++) {
+        await applyTextLayersToFrame(i);
+        if (i % 5 === 0 || i === frames.length - 1) {
+          document.getElementById('loading-progress').textContent = `应用文本 ${i + 1} / ${frames.length} 帧`;
+        }
+        if (i % 5 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 1));
+        }
+      }
+
+      // 清空文本图层
+      textLayers = [];
+      document.querySelectorAll('.text-layer').forEach(div => div.remove());
+      hideToolbar();
+
+      // 刷新当前帧显示
+      showFrame(currentFrame);
+    }
+
+    document.getElementById('loading-progress').textContent = '准备导出...';
     await exportGIF(result.filePath, quality);
     hideLoading();
     showNotification('GIF 导出成功！', 'success');
