@@ -51,12 +51,15 @@ function createSelectorWindow() {
     selectorWindow = new BrowserWindow({
         width: width,
         height: height,
+        x: 0,
+        y: 0,
         frame: false,
         transparent: true,
         alwaysOnTop: true,
         resizable: false,
         movable: false,
-        fullscreen: true,
+        skipTaskbar: true,
+        hasShadow: false,
         icon: iconPath, // 设置窗口图标
         webPreferences: {
             nodeIntegration: true,
@@ -67,6 +70,10 @@ function createSelectorWindow() {
 
     selectorWindow.loadFile('src/renderer/selector.html');
     selectorWindow.setAlwaysOnTop(true, 'screen-saver');
+    // 在 macOS 上使用 setVisibleOnAllWorkspaces 而不是 fullscreen
+    if (process.platform === 'darwin') {
+        selectorWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    }
 
     // 启用 remote 模块
     try {
