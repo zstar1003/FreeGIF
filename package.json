@@ -8,7 +8,8 @@
     "dev": "electron . --dev",
     "build": "electron-builder",
     "build:win": "electron-builder --win",
-    "build:mac": "electron-builder --mac",
+    "build:mac": "dotenv -e .env.local -- electron-builder --mac",
+    "build:mac:unsigned": "electron-builder --mac",
     "build:linux": "electron-builder --linux"
   },
   "keywords": [
@@ -20,6 +21,8 @@
   "author": "zstar",
   "license": "MIT",
   "devDependencies": {
+    "@electron/notarize": "^3.1.1",
+    "dotenv-cli": "^11.0.0",
     "electron": "^39.0.0",
     "electron-builder": "^24.9.1"
   },
@@ -68,9 +71,31 @@
           ]
         }
       ],
-      "icon": "src/public/logo.png",
-      "category": "public.app-category.graphics-design"
+      "icon": "src/public/logo.icns",
+      "category": "public.app-category.graphics-design",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "type": "distribution",
+      "notarize": false
     },
+    "dmg": {
+      "sign": false,
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "afterSign": "build/notarize.js",
     "linux": {
       "target": [
         "AppImage"

@@ -24,8 +24,7 @@ English | [简体中文](README.md)
 ### Method 1: Download Pre-built Version (Recommended)
 
 - **Windows**:https://github.com/zstar1003/FreeGIF/releases/download/v1.0.0/FreeGIF.Setup.1.0.0.exe
-- **macOS(arm)**:https://github.com/zstar1003/FreeGIF/releases/download/v1.0.0/FreeGIF-1.0.0-arm64.dmg
-- **macOS(x86)**:https://github.com/zstar1003/FreeGIF/releases/download/v1.0.0/FreeGIF-1.0.0.dmg
+
 
 ### Method 2: Run from Source
 

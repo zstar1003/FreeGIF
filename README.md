@@ -21,11 +21,9 @@
 
 ## 📦 下载安装
 
-### 方式 1：下载预编译版本（推荐）
+### 方式 1：直接下载
 
 - **Windows**:https://github.com/zstar1003/FreeGIF/releases/download/v1.0.0/FreeGIF.Setup.1.0.0.exe
-- **macOS(arm)**:https://github.com/zstar1003/FreeGIF/releases/download/v1.0.0/FreeGIF-1.0.0-arm64.dmg
-- **macOS(x86)**:https://github.com/zstar1003/FreeGIF/releases/download/v1.0.0/FreeGIF-1.0.0.dmg
 
 ### 方式 2：从源码运行
 
